@@ -5,6 +5,8 @@ SWAP_HANDS_ENABLE = no
 VPATH += keyboards/tzarc/djinn/graphics
 SRC += \
 	theme_djinn_default.c \
+	nier-automata-yorha.qgf.c \
+	monado-iii.qgf.c \
 	djinn.qgf.c \
 	lock-caps-ON.qgf.c \
 	lock-scrl-ON.qgf.c \

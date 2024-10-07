@@ -12,7 +12,9 @@
 #include "djinn.h"
 #include "theme_djinn_default.h"
 
-#include "djinn.qgf.h"
+//#include "nier-automata-yorha.qgf.h"
+#include "monado-iii.qgf.h"
+//#include "djinn.qgf.h"
 #include "lock-caps-ON.qgf.h"
 #include "lock-scrl-ON.qgf.h"
 #include "lock-num-ON.qgf.h"
@@ -76,7 +78,9 @@ const char *rgb_matrix_name(uint8_t effect) {
 //----------------------------------------------------------
 // UI Initialisation
 void keyboard_post_init_display(void) {
-    djinn_logo    = qp_load_image_mem(gfx_djinn);
+    //djinn_logo    = qp_load_image_mem(gfx_nier_automata_yorha);
+    djinn_logo    = qp_load_image_mem(gfx_monado_iii);
+    //djinn_logo    = qp_load_image_mem(gfx_djinn);
     lock_caps_on  = qp_load_image_mem(gfx_lock_caps_ON);
     lock_caps_off = qp_load_image_mem(gfx_lock_caps_OFF);
     lock_num_on   = qp_load_image_mem(gfx_lock_num_ON);
@@ -90,15 +94,24 @@ void keyboard_post_init_display(void) {
 // UI Drawing
 void draw_ui_user(bool force_redraw) {
     bool            hue_redraw = force_redraw;
+    bool            sat_redraw = force_redraw;
     static uint16_t last_hue   = 0xFFFF;
+    static uint16_t last_sat   = 0xFFFF;
 #if defined(RGB_MATRIX_ENABLE)
     uint16_t curr_hue = rgb_matrix_get_hue();
+    uint16_t curr_sat = rgb_matrix_get_sat();
 #else  // defined(RGB_MATRIX_ENABLE)
     uint16_t curr_hue = 0;
+    uint16_t curr_sat = 255;
 #endif // defined(RGB_MATRIX_ENABLE)
     if (last_hue != curr_hue) {
         last_hue   = curr_hue;
         hue_redraw = true;
+    }
+
+    if (last_sat != curr_sat) {
+        last_sat   = curr_sat;
+        sat_redraw = true;
     }
 
     bool            layer_state_redraw = false;
@@ -140,10 +153,11 @@ void draw_ui_user(bool force_redraw) {
 #endif // defined(RGB_MATRIX_ENABLE)
 
     // Show the Djinn logo and two vertical bars on both sides
-    if (hue_redraw) {
-        qp_drawimage_recolor(lcd, 120 - djinn_logo->width / 2, 32, djinn_logo, curr_hue, 255, 255, curr_hue, 255, 0);
-        qp_rect(lcd, 0, 0, 8, 319, curr_hue, 255, 255, true);
-        qp_rect(lcd, 231, 0, 239, 319, curr_hue, 255, 255, true);
+    if (hue_redraw || sat_redraw) {
+        //qp_drawimage_recolor(lcd, 120 - djinn_logo->width / 2, 32, djinn_logo, curr_hue, curr_sat, 255, curr_hue, curr_sat, 0);
+        qp_drawimage(lcd, 120 - djinn_logo->width / 2, 32, djinn_logo);
+        qp_rect(lcd, 0, 0, 8, 319, curr_hue, curr_sat, 255, true);
+        qp_rect(lcd, 231, 0, 239, 319, curr_hue, curr_sat, 255, true);
     }
 
     int ypos = 4;
@@ -154,7 +168,7 @@ void draw_ui_user(bool force_redraw) {
         int  xpos    = 16;
 
 #if defined(RGB_MATRIX_ENABLE)
-        if (hue_redraw || rgb_effect_redraw) {
+        if (hue_redraw || sat_redraw || rgb_effect_redraw) {
             static int max_rgb_xpos = 0;
             xpos                    = 16;
             snprintf(buf, sizeof(buf), "rgb: %s", rgb_matrix_name(curr_effect));
@@ -170,7 +184,7 @@ void draw_ui_user(bool force_redraw) {
                     buf[i] = tolower(buf[i]);
             }
 
-            xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, buf, curr_hue, 255, 255, curr_hue, 255, 0);
+            xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, buf, curr_hue, curr_sat, 255, curr_hue, curr_sat, 0);
             if (max_rgb_xpos < xpos) {
                 max_rgb_xpos = xpos;
             }
@@ -180,14 +194,14 @@ void draw_ui_user(bool force_redraw) {
         ypos += thintel->line_height + 4;
 #endif // defined(RGB_MATRIX_ENABLE)
 
-        if (hue_redraw || layer_state_redraw) {
+        if (hue_redraw || sat_redraw || layer_state_redraw) {
             extern const char *current_layer_name(void);
             const char        *layer_name = current_layer_name();
 
             static int max_layer_xpos = 0;
             xpos                      = 16;
             snprintf(buf, sizeof(buf), "layer: %s", layer_name);
-            xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, buf, curr_hue, 255, 255, curr_hue, 255, 0);
+            xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, buf, curr_hue, curr_sat, 255, curr_hue, curr_sat, 0);
             if (max_layer_xpos < xpos) {
                 max_layer_xpos = xpos;
             }
@@ -196,11 +210,11 @@ void draw_ui_user(bool force_redraw) {
 
         ypos += thintel->line_height + 4;
 
-        if (hue_redraw || power_state_redraw) {
+        if (hue_redraw || sat_redraw || power_state_redraw) {
             static int max_power_xpos = 0;
             xpos                      = 16;
             snprintf(buf, sizeof(buf), "power: %s", usbpd_str(kb_state.current_setting));
-            xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, buf, curr_hue, 255, 255, curr_hue, 255, 0);
+            xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, buf, curr_hue, curr_sat, 255, curr_hue, curr_sat, 0);
             if (max_power_xpos < xpos) {
                 max_power_xpos = xpos;
             }
@@ -209,11 +223,11 @@ void draw_ui_user(bool force_redraw) {
 
         ypos += thintel->line_height + 4;
 
-        if (hue_redraw || scan_redraw) {
+        if (hue_redraw || sat_redraw || scan_redraw) {
             static int max_scans_xpos = 0;
             xpos                      = 16;
             snprintf(buf, sizeof(buf), "scans: %d", (int)theme_state.scan_rate);
-            xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, buf, curr_hue, 255, 255, curr_hue, 255, 0);
+            xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, buf, curr_hue, curr_sat, 255, curr_hue, curr_sat, 0);
             if (max_scans_xpos < xpos) {
                 max_scans_xpos = xpos;
             }
@@ -222,11 +236,11 @@ void draw_ui_user(bool force_redraw) {
 
         ypos += thintel->line_height + 4;
 
-        if (hue_redraw || wpm_redraw) {
+        if (hue_redraw || sat_redraw || wpm_redraw) {
             static int max_wpm_xpos = 0;
             xpos                    = 16;
             snprintf(buf, sizeof(buf), "wpm: %d", (int)get_current_wpm());
-            xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, buf, curr_hue, 255, 255, curr_hue, 255, 0);
+            xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, buf, curr_hue, curr_sat, 255, curr_hue, curr_sat, 0);
             if (max_wpm_xpos < xpos) {
                 max_wpm_xpos = xpos;
             }
@@ -234,16 +248,29 @@ void draw_ui_user(bool force_redraw) {
         }
 
         ypos += thintel->line_height + 4;
+
+        // if (hue_redraw || sat_redraw) {
+        //     static int max_wpm_xpos = 0;
+        //     xpos                    = 16;
+        //     snprintf(buf, sizeof(buf), "image dimensions: %d x %d", (int)djinn_logo->width, (int)djinn_logo->height);
+        //     xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, buf, curr_hue, curr_sat, 255, curr_hue, curr_sat, 0);
+        //     if (max_wpm_xpos < xpos) {
+        //         max_wpm_xpos = xpos;
+        //     }
+        //     qp_rect(lcd, xpos, ypos, max_wpm_xpos, ypos + thintel->line_height, 0, 0, 0, true);
+        // }
+
+        // ypos += thintel->line_height + 4;
     }
 
     // Show LED lock indicators on the right side
     if (!is_keyboard_left()) {
         static led_t last_led_state = {0};
-        if (hue_redraw || last_led_state.raw != host_keyboard_led_state().raw) {
+        if (hue_redraw || sat_redraw || last_led_state.raw != host_keyboard_led_state().raw) {
             last_led_state.raw = host_keyboard_led_state().raw;
-            qp_drawimage_recolor(lcd, 239 - 12 - (32 * 3), 0, last_led_state.caps_lock ? lock_caps_on : lock_caps_off, curr_hue, 255, last_led_state.caps_lock ? 255 : 32, curr_hue, 255, 0);
-            qp_drawimage_recolor(lcd, 239 - 12 - (32 * 2), 0, last_led_state.num_lock ? lock_num_on : lock_num_off, curr_hue, 255, last_led_state.num_lock ? 255 : 32, curr_hue, 255, 0);
-            qp_drawimage_recolor(lcd, 239 - 12 - (32 * 1), 0, last_led_state.scroll_lock ? lock_scrl_on : lock_scrl_off, curr_hue, 255, last_led_state.scroll_lock ? 255 : 32, curr_hue, 255, 0);
+            qp_drawimage_recolor(lcd, 239 - 12 - (32 * 3), 0, last_led_state.caps_lock ? lock_caps_on : lock_caps_off, curr_hue, curr_sat, last_led_state.caps_lock ? 255 : 32, curr_hue, curr_sat, 0);
+            qp_drawimage_recolor(lcd, 239 - 12 - (32 * 2), 0, last_led_state.num_lock ? lock_num_on : lock_num_off, curr_hue, curr_sat, last_led_state.num_lock ? 255 : 32, curr_hue, curr_sat, 0);
+            qp_drawimage_recolor(lcd, 239 - 12 - (32 * 1), 0, last_led_state.scroll_lock ? lock_scrl_on : lock_scrl_off, curr_hue, curr_sat, last_led_state.scroll_lock ? 255 : 32, curr_hue, curr_sat, 0);
         }
     }
 }
