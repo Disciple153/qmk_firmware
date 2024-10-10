@@ -124,7 +124,7 @@ void draw_ln(int xpos, int* ypos, int* prev_xpos, bool updated, char* buf, uint8
 void draw_data(
     int layer,
     uint8_t hue, uint8_t sat, uint8_t effect, uint8_t led_b, uint8_t lcd_b, uint8_t speed, uint8_t wpm,
-    bool layer_state_redraw, bool wpm_redraw, bool power_state_redraw, bool rgb_effect_redraw, bool scan_redraw, bool led_b_redraw, bool lcd_b_redraw, bool speed_redraw
+    bool redraw, bool wpm_redraw, bool power_state_redraw, bool rgb_effect_redraw, bool scan_redraw, bool led_b_redraw, bool lcd_b_redraw, bool speed_redraw
 ) {
     if (!is_keyboard_left()) {
         return;
@@ -139,11 +139,11 @@ void draw_data(
     // LINE 1
     static int prev_line_1_xpos = 0;
 
-    updated = layer_state_redraw;
+    updated = redraw;
     xpos = 16;
     buf[0] = 0;
 
-    if (layer_state_redraw) {
+    if (redraw) {
         extern const char *current_layer_name(void);
         const char        *layer_name = current_layer_name();
         snprintf(buf, sizeof(buf), "layer: %s", layer_name);
@@ -155,20 +155,20 @@ void draw_data(
     // LINE 2
     static int prev_line_2_xpos = 0;
 
-    updated = layer_state_redraw;
+    updated = redraw;
     xpos = 16;
     buf[0] = 0;
 
     switch (layer) {
         case _QWERTY:
-            if (layer_state_redraw || wpm_redraw) {
+            if (redraw || wpm_redraw) {
                 snprintf(buf, sizeof(buf), "wpm: %d", wpm);
                 updated = true;
             }
             break;
 
         case _ADJUST:
-            if (layer_state_redraw || power_state_redraw) {
+            if (redraw || power_state_redraw) {
                 snprintf(buf, sizeof(buf), "power: %s", usbpd_str(kb_state.current_setting));
                 updated = true;
             }
@@ -176,7 +176,7 @@ void draw_data(
 
 #if defined(RGB_MATRIX_ENABLE)
         case _RGB:
-            if (layer_state_redraw || rgb_effect_redraw) {
+            if (redraw || rgb_effect_redraw) {
                 snprintf(buf, sizeof(buf), "effect: %s", rgb_matrix_name(effect));
 
                 for (int i = 5; i < sizeof(buf); ++i) {
@@ -201,13 +201,13 @@ void draw_data(
     // LINE 3
     static int prev_line_3_xpos = 0;
 
-    updated = layer_state_redraw;
+    updated = redraw;
     xpos = 16;
     buf[0] = 0;
 
     switch (layer) {
         case _ADJUST:
-            if (layer_state_redraw || scan_redraw) {
+            if (redraw || scan_redraw) {
                 snprintf(buf, sizeof(buf), "scans: %d", (int)theme_state.scan_rate);
                 updated = true;
             }
@@ -215,7 +215,7 @@ void draw_data(
 
 #if defined(RGB_MATRIX_ENABLE)
         case _RGB:
-            if (layer_state_redraw) {
+            if (redraw) {
                 snprintf(buf, sizeof(buf), "hue: %d", hue);
                 updated = true;
             }
@@ -228,14 +228,14 @@ void draw_data(
     // LINE 4
     static int prev_line_4_xpos = 0;
 
-    updated = layer_state_redraw;
+    updated = redraw;
     xpos = 16;
     buf[0] = 0;
 
     switch (layer) {
 #if defined(RGB_MATRIX_ENABLE)
         case _RGB:
-            if (layer_state_redraw) {
+            if (redraw) {
                 snprintf(buf, sizeof(buf), "saturation: %d", sat);
                 updated = true;
             }
@@ -248,14 +248,14 @@ void draw_data(
     // LINE 5
     static int prev_line_5_xpos = 0;
 
-    updated = layer_state_redraw;
+    updated = redraw;
     xpos = 16;
     buf[0] = 0;
 
     switch (layer) {
 #if defined(RGB_MATRIX_ENABLE)
         case _RGB:
-            if (layer_state_redraw || led_b_redraw) {
+            if (redraw || led_b_redraw) {
                 snprintf(buf, sizeof(buf), "led brightness: %d", led_b);
                 updated = true;
             }
@@ -268,14 +268,14 @@ void draw_data(
     // LINE 6
     static int prev_line_6_xpos = 0;
 
-    updated = layer_state_redraw;
+    updated = redraw;
     xpos = 16;
     buf[0] = 0;
 
     switch (layer) {
 #if defined(RGB_MATRIX_ENABLE)
         case _RGB:
-            if (layer_state_redraw || lcd_b_redraw) {
+            if (redraw || lcd_b_redraw) {
                 snprintf(buf, sizeof(buf), "lcd brightness: %d", lcd_b);
                 updated = true;
             }
@@ -288,14 +288,14 @@ void draw_data(
     // LINE 7
     static int prev_line_7_xpos = 0;
 
-    updated = layer_state_redraw;
+    updated = redraw;
     xpos = 16;
     buf[0] = 0;
 
     switch (layer) {
 #if defined(RGB_MATRIX_ENABLE)
         case _RGB:
-            if (layer_state_redraw || speed_redraw) {
+            if (redraw || speed_redraw) {
                 snprintf(buf, sizeof(buf), "speed: %d", speed);
                 updated = true;
             }
@@ -469,28 +469,22 @@ void draw_ui_user(bool force_redraw) {
     }
 #endif // defined(RGB_MATRIX_ENABLE)
 
-    layer_state_redraw = layer_state_redraw || hue_redraw || sat_redraw;
+    bool redraw = layer_state_redraw || hue_redraw || sat_redraw;
 
     // Draw background
-    if (layer_state_redraw) {
+    if (redraw) {
         draw_data(layer,
             curr_hue, curr_sat, curr_effect, curr_led_b, curr_lcd_b, curr_speed, curr_wpm,
-            layer_state_redraw, wpm_redraw, power_state_redraw, rgb_effect_redraw,
+            redraw, wpm_redraw, power_state_redraw, rgb_effect_redraw,
             scan_redraw, led_b_redraw, lcd_b_redraw, speed_redraw
         );
         draw_bg(layer, curr_hue, curr_sat);
     }
 
-    draw_data(layer,
-        curr_hue, curr_sat, curr_effect, curr_led_b, curr_lcd_b, curr_speed, curr_wpm,
-        layer_state_redraw, wpm_redraw, power_state_redraw, rgb_effect_redraw,
-        scan_redraw, led_b_redraw, lcd_b_redraw, speed_redraw
-    );
-
     // Show LED lock indicators on the right side
     if (!is_keyboard_left()) {
         static led_t last_led_state = {0};
-        if (hue_redraw || sat_redraw || last_led_state.raw != host_keyboard_led_state().raw) {
+        if (redraw || last_led_state.raw != host_keyboard_led_state().raw) {
             last_led_state.raw = host_keyboard_led_state().raw;
             qp_drawimage_recolor(lcd, 239 - 12 - 32, (32 * 0), last_led_state.caps_lock ? lock_caps_on : lock_caps_off, curr_hue, curr_sat, last_led_state.caps_lock ? 255 : 32, curr_hue, curr_sat, 0);
             // qp_drawimage_recolor(lcd, 239 - 12 - 32, (32 * 1), last_led_state.num_lock ? lock_num_on : lock_num_off, curr_hue, curr_sat, last_led_state.num_lock ? 255 : 32, curr_hue, curr_sat, 0);
@@ -498,10 +492,11 @@ void draw_ui_user(bool force_redraw) {
         }
     }
 
-    // On layer change to qwerty, draw background last
-    if (layer_state_redraw && layer != _RGB) {
-        draw_bg(layer, curr_hue, curr_sat);
-    }
+    draw_data(layer,
+        curr_hue, curr_sat, curr_effect, curr_led_b, curr_lcd_b, curr_speed, curr_wpm,
+        redraw, wpm_redraw, power_state_redraw, rgb_effect_redraw,
+        scan_redraw, led_b_redraw, lcd_b_redraw, speed_redraw
+    );
 }
 
 //----------------------------------------------------------
