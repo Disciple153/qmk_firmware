@@ -12,6 +12,8 @@ typedef struct theme_runtime_config {
 } theme_runtime_config;
 #pragma pack(pop)
 
+enum layers { _QWERTY, _MEDIA, _RGB, _ADJUST };
+
 extern theme_runtime_config theme_state;
 
 void theme_init(void);

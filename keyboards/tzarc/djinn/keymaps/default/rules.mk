@@ -7,6 +7,10 @@ SRC += \
 	theme_djinn_default.c \
 	nier-automata-yorha.qgf.c \
 	monado-iii.qgf.c \
+    djinn-media-left.qgf.c \
+    djinn-media-right.qgf.c \
+    djinn-rgb-left.qgf.c \
+    djinn-rgb-right.qgf.c \
 	djinn.qgf.c \
 	lock-caps-ON.qgf.c \
 	lock-scrl-ON.qgf.c \

@@ -3,9 +3,6 @@
 #include QMK_KEYBOARD_H
 #include "theme_djinn_default.h"
 
-// Layer definitions
-enum { _QWERTY, _MEDIA, _RGB, _ADJUST };
-
 //----------------------------------------------------------
 // Key map
 
@@ -27,7 +24,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, _______, KC_UP,   _______, _______,   _______, _______,                             _______, _______, _______, _______, _______, _______, _______,
         _______, KC_LEFT, KC_DOWN, KC_RIGHT,_______,   _______, _______,                             _______, _______, _______, _______, _______, _______, _______,
         _______, _______, _______, _______, _______,   _______, _______,                             _______, _______, _______, _______, _______, _______, _______,
-                                   _______, _______,   _______, KC_CAPS,                             KC_CAPS, _______, _______, MO(_RGB),
+                              MO(_ADJUST), _______,   _______, KC_CAPS,                             KC_CAPS, _______, _______, MO(_RGB),
                                                                       _______,               _______,
                                                      _______,                                               _______,
                                             KC_MPRV, KC_MPLY, KC_MNXT,                             KC_VOLD, KC_MUTE, KC_VOLU,
@@ -40,9 +37,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, _______, _______, _______, _______,   KC_MINS, KC_NO,                               KC_NO,   KC_PLUS, _______, _______, _______, _______, _______,
                                    _______, _______,   _______, _______,                             _______, _______, _______, _______,
                                                                       _______,               _______,
-                                                     RGB_VAD,                                               BL_UP,
+                                                     RGB_VAI,                                               BL_UP,
                                             RGB_SPD, _______, RGB_SPI,                            RGB_RMOD, _______, RGB_MOD,
-                                                     RGB_VAI,                                               BL_DOWN
+                                                     RGB_VAD,                                               BL_DOWN
     ),
     /*
                   hue, _______, hue        saturation, _______, saturation.
@@ -91,6 +88,10 @@ const char *current_layer_name(void) {
             return "adjust";
     }
     return "unknown";
+}
+
+const int current_layer(void) {
+    return layer_state;
 }
 
 //----------------------------------------------------------
