@@ -4,6 +4,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <printf.h>
+#include <stdarg.h>
 #include "qp.h"
 #include "backlight.h"
 #include "transactions.h"
@@ -34,6 +35,12 @@
 #define LCD_HEIGHT 320
 #define LCD_CENTER_X (LCD_WIDTH / 2)
 #define LCD_CENTER_Y (LCD_HEIGHT / 2)
+#define LCD_WIDTH_I (LCD_WIDTH - 1)
+#define LCD_HEIGHT_I (LCD_HEIGHT - 1)
+#define BAR_WIDTH 8
+#define MARGIN 9
+#define MARGIN_R (LCD_WIDTH_I - MARGIN)
+#define TEXT_MARGIN 16
 
 static painter_image_handle_t djinn_logo;
 static painter_image_handle_t lock_caps_on;
@@ -118,11 +125,17 @@ int centered_x_offset(painter_image_handle_t image, int offset, int spacing) {
     return LCD_CENTER_X - (image->width / 2) + ((image->width + spacing) * offset);
 }
 
+int print_and_clear(int xpos, int ypos, const char *text, uint16_t curr_hue, uint16_t curr_sat) {
+    xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, text, curr_hue, curr_sat, 255, curr_hue, curr_sat, 0);
+    qp_rect(lcd, xpos, ypos, MARGIN_R, ypos + thintel->line_height, 0, 0, 0, true);
+
+    return ypos + thintel->line_height + 4;
+}
+
 //----------------------------------------------------------
 // UI Drawing
 void draw_ui_user(bool force_redraw) {
-    bool            hue_redraw = force_redraw;
-    bool            sat_redraw = force_redraw;
+    bool            redraw = force_redraw;
     static uint16_t last_hue   = 0xFFFF;
     static uint16_t last_sat   = 0xFFFF;
 #if defined(RGB_MATRIX_ENABLE)
@@ -134,18 +147,17 @@ void draw_ui_user(bool force_redraw) {
 #endif
     if (last_hue != curr_hue) {
         last_hue   = curr_hue;
-        hue_redraw = true;
+        redraw = true;
     }
     if (last_sat != curr_sat) {
         last_sat   = curr_sat;
-        sat_redraw = true;
+        redraw = true;
     }
 
-    bool            layer_state_redraw = false;
-    static uint32_t last_layer_state   = 0;
+    static uint32_t last_layer_state = 0;
     if (last_layer_state != layer_state) {
-        last_layer_state   = layer_state;
-        layer_state_redraw = true;
+        last_layer_state = layer_state;
+        redraw           = true;
     }
 
     bool            wpm_redraw      = false;
@@ -171,69 +183,70 @@ void draw_ui_user(bool force_redraw) {
     uint8_t curr_layer = get_highest_layer(layer_state);
 
     // Show the Djinn logo and two vertical bars on both sides
-    if (layer_state_redraw ||hue_redraw || sat_redraw) {
-        qp_rect(lcd, 9, 32, 230, 319, curr_hue, curr_sat, 0, true);
+    if (redraw) {
+        // Clear center
+        qp_rect(lcd, MARGIN, 0, MARGIN_R, LCD_HEIGHT_I, 0, 0, 0, true);
+
+        // Display logo
         if (curr_layer == _QWERTY) {
             qp_drawimage(lcd, 120 - djinn_logo->width / 2, 32, djinn_logo);
         }
-        qp_rect(lcd, 0, 0, 8, 319, curr_hue, curr_sat, 255, true);
-        qp_rect(lcd, 231, 0, 239, 319, curr_hue, curr_sat, 255, true);
+
+        // Display bars
+        qp_rect(lcd, 0, 0, BAR_WIDTH, LCD_HEIGHT_I, curr_hue, curr_sat, 255, true);
+        qp_rect(lcd, LCD_WIDTH_I - BAR_WIDTH, 0, LCD_WIDTH_I, LCD_HEIGHT_I, curr_hue, curr_sat, 255, true);
     }
+
+    int ypos    = 4;
 
     // LEFT DISPLAY
     if (is_keyboard_left()) {
         int icon_y = LCD_HEIGHT - media_play->height - 5;
         char buf[64] = {0};
-        int  xpos    = 16;
-        int  ypos    = 4;
 
         // Always show layer
-        if (hue_redraw || sat_redraw || layer_state_redraw) {
-            static int max_layer_xpos = 0;
-            xpos = 16;
+        if (redraw) {
             snprintf(buf, sizeof(buf), "layer: %s", layer_name);
-            xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, buf, curr_hue, curr_sat, 255, curr_hue, curr_sat, 0);
-            if (max_layer_xpos < xpos) max_layer_xpos = xpos;
-            qp_rect(lcd, xpos, ypos, max_layer_xpos, ypos + thintel->line_height, 0, 0, 0, true);
+            ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
         }
-        ypos += thintel->line_height + 4;
+        else {
+            ypos += thintel->line_height + 4;
+        }
 
-        // Layer-specific content
-        if (curr_layer == _QWERTY) {
-            if (hue_redraw || sat_redraw || wpm_redraw) {
-                static int max_wpm_xpos = 0;
-                xpos = 16;
-                snprintf(buf, sizeof(buf), "wpm: %d", (int)get_current_wpm());
-                xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, buf, curr_hue, curr_sat, 255, curr_hue, curr_sat, 0);
-                if (max_wpm_xpos < xpos) max_wpm_xpos = xpos;
-                qp_rect(lcd, xpos, ypos, max_wpm_xpos, ypos + thintel->line_height, 0, 0, 0, true);
-            }
-        } else if (curr_layer == _RGB) {
-#if defined(RGB_MATRIX_ENABLE)
-            if (hue_redraw || sat_redraw || rgb_effect_redraw) {
-                static int max_rgb_xpos = 0;
-                xpos = 16;
-                snprintf(buf, sizeof(buf), "rgb: %s", rgb_matrix_name(curr_effect));
-                for (int i = 5; i < sizeof(buf); ++i) {
-                    if (buf[i] == 0) break;
-                    else if (buf[i] == '_') buf[i] = ' ';
-                    else if (buf[i - 1] == ' ') buf[i] = toupper(buf[i]);
-                    else if (buf[i - 1] != ' ') buf[i] = tolower(buf[i]);
+        switch (curr_layer) {
+            case _QWERTY:
+                if (redraw || wpm_redraw) {
+                    snprintf(buf, sizeof(buf), "wpm: %d", (int)get_current_wpm());
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
                 }
-                xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, buf, curr_hue, curr_sat, 255, curr_hue, curr_sat, 0);
-                if (max_rgb_xpos < xpos) max_rgb_xpos = xpos;
-                qp_rect(lcd, xpos, ypos, max_rgb_xpos, ypos + thintel->line_height, 0, 0, 0, true);
-            }
+                break;
+            case _MEDIA:
+                if (redraw) {
+                    qp_drawimage_recolor(lcd, centered_x_offset(media_prev, -1, 5), icon_y, media_prev, curr_hue, curr_sat, 0, curr_hue, curr_sat, 255);
+                    qp_drawimage_recolor(lcd, centered_x_offset(media_play, 0, 5), icon_y, media_play, curr_hue, curr_sat, 0, curr_hue, curr_sat, 255);
+                    qp_drawimage_recolor(lcd, centered_x_offset(media_next, 1, 5), icon_y, media_next, curr_hue, curr_sat, 0, curr_hue, curr_sat, 255);
+                }
+                break;
+            case _RGB:
+#if defined(RGB_MATRIX_ENABLE)
+                if (redraw || rgb_effect_redraw) {
+                    snprintf(buf, sizeof(buf), "rgb: %s", rgb_matrix_name(curr_effect));
+                    for (int i = 5; i < sizeof(buf); ++i) {
+                        if (buf[i] == 0) break;
+                        else if (buf[i] == '_') buf[i] = ' ';
+                        else if (buf[i - 1] == ' ') buf[i] = toupper(buf[i]);
+                        else if (buf[i - 1] != ' ') buf[i] = tolower(buf[i]);
+                    }
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
+                }
+                if (redraw) {
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, "enc: hue", curr_hue, curr_sat);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, "U/D: brightness  L/R: speed", curr_hue, curr_sat);
+                }
 #endif
-        }
-
-        // Media control icons at bottom for _MEDIA and _RGB layers
-        if (curr_layer == _MEDIA || curr_layer == _RGB) {
-            if (hue_redraw || sat_redraw || layer_state_redraw) {
-                qp_drawimage_recolor(lcd, centered_x_offset(media_prev, -1, 5), icon_y, media_prev, curr_hue, curr_sat, 0, curr_hue, curr_sat, 255);
-                qp_drawimage_recolor(lcd, centered_x_offset(media_play, 0, 5), icon_y, media_play, curr_hue, curr_sat, 0, curr_hue, curr_sat, 255);
-                qp_drawimage_recolor(lcd, centered_x_offset(media_next, 1, 5), icon_y, media_next, curr_hue, curr_sat, 0, curr_hue, curr_sat, 255);
-            }
+                break;
+            default:
+                break;
         }
     }
 
@@ -241,24 +254,32 @@ void draw_ui_user(bool force_redraw) {
     if (!is_keyboard_left()) {
         int icon_y = LCD_HEIGHT - volume_mute->height - 5;
 
-        // Layer-specific content
-        if (curr_layer == _QWERTY) {
-            static led_t last_led_state = {0};
-            if (hue_redraw || sat_redraw || last_led_state.raw != host_keyboard_led_state().raw) {
-                last_led_state.raw = host_keyboard_led_state().raw;
-                qp_drawimage_recolor(lcd, 239 - 12 - 32, 0, last_led_state.caps_lock ? lock_caps_on : lock_caps_off, curr_hue, curr_sat, last_led_state.caps_lock ? 255 : 32, curr_hue, curr_sat, 0);
-                // qp_drawimage_recolor(lcd, 239 - 12 - (32 * 2), 0, last_led_state.num_lock ? lock_num_on : lock_num_off, curr_hue, curr_sat, last_led_state.num_lock ? 255 : 32, curr_hue, curr_sat, 0);
-                // qp_drawimage_recolor(lcd, 239 - 12 - (32 * 1), 0, last_led_state.scroll_lock ? lock_scrl_on : lock_scrl_off, curr_hue, curr_sat, last_led_state.scroll_lock ? 255 : 32, curr_hue, curr_sat, 0);
-            }
+        switch (curr_layer) {
+            case _MEDIA:
+                // Volume control icons at bottom for _MEDIA and _RGB layers
+                if (redraw) {
+                    qp_drawimage_recolor(lcd, centered_x_offset(volume_down, -1, 5), icon_y, volume_down, curr_hue, curr_sat, 0, curr_hue, curr_sat, 255);
+                    qp_drawimage_recolor(lcd, centered_x_offset(volume_mute, 0, 5), icon_y, volume_mute, curr_hue, curr_sat, 0, curr_hue, curr_sat, 255);
+                    qp_drawimage_recolor(lcd, centered_x_offset(volume_up, 1, 5), icon_y, volume_up, curr_hue, curr_sat, 0, curr_hue, curr_sat, 255);
+                }
+                break;
+            case _RGB:
+                if (redraw) {
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, "enc: saturation", curr_hue, curr_sat);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, "L/R: effect  U/D: backlight", curr_hue, curr_sat);
+                }
+                break;
+            default:
+                break;
         }
 
-        // Volume control icons at bottom for _MEDIA and _RGB layers
-        if (curr_layer == _MEDIA || curr_layer == _RGB) {
-            if (hue_redraw || sat_redraw || layer_state_redraw) {
-                qp_drawimage_recolor(lcd, centered_x_offset(volume_down, -1, 5), icon_y, volume_down, curr_hue, curr_sat, 0, curr_hue, curr_sat, 255);
-                qp_drawimage_recolor(lcd, centered_x_offset(volume_mute, 0, 5), icon_y, volume_mute, curr_hue, curr_sat, 0, curr_hue, curr_sat, 255);
-                qp_drawimage_recolor(lcd, centered_x_offset(volume_up, 1, 5), icon_y, volume_up, curr_hue, curr_sat, 0, curr_hue, curr_sat, 255);
-            }
+        // State of the lock keys
+        static led_t last_led_state = {0};
+        if (redraw || last_led_state.raw != host_keyboard_led_state().raw) {
+            last_led_state.raw = host_keyboard_led_state().raw;
+            qp_drawimage_recolor(lcd, LCD_WIDTH_I - 12 - 32, 0, last_led_state.caps_lock ? lock_caps_on : lock_caps_off, curr_hue, curr_sat, last_led_state.caps_lock ? 255 : 32, curr_hue, curr_sat, 0);
+            // qp_drawimage_recolor(lcd, LCD_WIDTH_I - 12 - (32 * 2), 0, last_led_state.num_lock ? lock_num_on : lock_num_off, curr_hue, curr_sat, last_led_state.num_lock ? 255 : 32, curr_hue, curr_sat, 0);
+            // qp_drawimage_recolor(lcd, LCD_WIDTH_I - 12 - (32 * 1), 0, last_led_state.scroll_lock ? lock_scrl_on : lock_scrl_off, curr_hue, curr_sat, last_led_state.scroll_lock ? 255 : 32, curr_hue, curr_sat, 0);
         }
     }
 }

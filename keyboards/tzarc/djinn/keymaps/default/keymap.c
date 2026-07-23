@@ -37,9 +37,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, _______, _______, _______, _______,   KC_MINS, KC_NO,                               KC_NO,   KC_PLUS, _______, _______, _______, _______, _______,
                                    _______, _______,   _______, _______,                             _______, _______, _______, _______,
                                                                       _______,               _______,
-                                                     RM_VALD,                                               BL_UP,
+                                                     RM_VALU,                                               BL_UP,
                                             RM_SPDD, _______, RM_SPDU,                            RM_PREV, _______, RM_NEXT,
-                                                     RM_VALU,                                               BL_DOWN
+                                                     RM_VALD,                                               BL_DOWN
     ),
     /*
                   hue, _______, hue        saturation, _______, saturation.
