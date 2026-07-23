@@ -25,7 +25,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, KC_LEFT, KC_DOWN, KC_RIGHT,_______,   _______, _______,                             _______, _______, _______, _______, _______, _______, _______,
         _______, _______, _______, _______, _______,   _______, _______,                             _______, _______, _______, _______, _______, _______, _______,
                                    _______, _______,   _______, KC_CAPS,                             KC_CAPS, _______, _______, MO(_RGB),
-                                                                      _______,               _______, 
+                                                                      _______,               _______,
                                                      _______,                                               _______,
                                             KC_MPRV, KC_MPLY, KC_MNXT,                             KC_VOLD, KC_MUTE, KC_VOLU,
                                                      _______,                                               _______
@@ -37,9 +37,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, _______, _______, _______, _______,   KC_MINS, KC_NO,                               KC_NO,   KC_PLUS, _______, _______, _______, _______, _______,
                                    _______, _______,   _______, _______,                             _______, _______, _______, _______,
                                                                       _______,               _______,
-                                                     RGB_VAD,                                               BL_UP,
-                                            RGB_SPD, _______, RGB_SPI,                            RGB_RMOD, _______, RGB_MOD,
-                                                     RGB_VAI,                                               BL_DOWN
+                                                     RM_VALD,                                               BL_UP,
+                                            RM_SPDD, _______, RM_SPDU,                            RM_PREV, _______, RM_NEXT,
+                                                     RM_VALU,                                               BL_DOWN
     ),
     /*
                   hue, _______, hue        saturation, _______, saturation.
@@ -66,10 +66,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 // clang-format off
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
-    [_QWERTY] = { ENCODER_CCW_CW(KC_MS_WH_UP, KC_MS_WH_DOWN), ENCODER_CCW_CW(KC_VOLD, KC_VOLU)  },
-    [_MEDIA]  = { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT),          ENCODER_CCW_CW(KC_MPRV, KC_MNXT)  },
-    [_RGB]    = { ENCODER_CCW_CW(RGB_HUD, RGB_HUI),           ENCODER_CCW_CW(RGB_SAD, RGB_SAI)  },
-    [_ADJUST] = { ENCODER_CCW_CW(_______, _______),           ENCODER_CCW_CW(_______, _______)  },
+    [_QWERTY] = { ENCODER_CCW_CW(MS_WHLU, MS_WHLD),  ENCODER_CCW_CW(KC_VOLD, KC_VOLU)  },
+    [_MEDIA]  = { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_MPRV, KC_MNXT)  },
+    [_RGB]    = { ENCODER_CCW_CW(RM_HUED, RM_HUEU),  ENCODER_CCW_CW(RM_SATD, RM_SATU)  },
+    [_ADJUST] = { ENCODER_CCW_CW(_______, _______),  ENCODER_CCW_CW(_______, _______)  },
 };
 // clang-format on
 
