@@ -35,6 +35,98 @@ void board_init(void) {
     usbpd_init();
 }
 
+// Forward declaration -- weak definition lives further down in this file,
+// but djinn_lcd_power_on() (below) needs to call it on re-init.
+void draw_ui_user(bool force_redraw);
+
+//----------------------------------------------------------
+// LCD power management
+//
+// NOTE: Historically this sequence only ever ran once, from
+// keyboard_post_init_kb(). RGB_POWER_ENABLE_PIN is re-driven every
+// housekeeping tick (self-healing against brief power glitches -- e.g.
+// a KVM switch bouncing VBUS), but the LCD enable pin and the ILI9341
+// init sequence were not, so a transient droop on the LCD's supply rail
+// (without a full MCU reset) would leave the panel permanently blank
+// until a physical unplug/replug re-ran post_init. This function makes
+// LCD bring-up re-runnable so it can be called again from housekeeping,
+// from a detected power fault, and from suspend/resume.
+
+static bool lcd_device_created = false;
+
+static void djinn_lcd_power_on(bool full_reinit) {
+    // Turn on the LCD's power rail
+    gpio_set_pin_output(LCD_POWER_ENABLE_PIN);
+    gpio_write_pin_high(LCD_POWER_ENABLE_PIN);
+
+    // Let the LCD get some power...
+    wait_ms(150);
+
+    if (!lcd_device_created) {
+        // Only construct the device object once -- re-running qp_init() below
+        // is what actually re-runs the ILI9341 hardware reset + init command
+        // sequence, which is what's needed after a real power-rail glitch.
+        lcd                 = qp_ili9341_make_spi_device(240, 320, LCD_CS_PIN, LCD_DC_PIN, LCD_RST_PIN, 4, 0);
+        lcd_device_created  = true;
+        full_reinit         = true;
+    }
+
+    if (full_reinit) {
+        qp_init(lcd, QP_ROTATION_0);
+        qp_power(lcd, true);
+        qp_rect(lcd, 0, 0, 239, 319, HSV_BLACK, true);
+        draw_ui_user(true);
+    } else {
+        qp_power(lcd, true);
+    }
+
+    // Turn on the LCD backlight
+    backlight_enable();
+    backlight_level(BACKLIGHT_LEVELS);
+}
+
+static void djinn_lcd_power_off(void) {
+    if (lcd_device_created) {
+        qp_power(lcd, false);
+    }
+    backlight_disable();
+    gpio_write_pin_low(LCD_POWER_ENABLE_PIN);
+}
+
+// Debounced monitor for the board/RGB power-fault comparator outputs.
+// These pins were previously defined in config.h but never read anywhere
+// in the firmware, so a hardware fault event (e.g. an under-voltage or
+// over-current blip caused by a KVM switch) was invisible to the firmware
+// and nothing ever recovered from it automatically.
+static bool djinn_power_fault_seen(void) {
+    static bool     fault_latched = false;
+    static uint32_t last_check    = 0;
+
+    if (timer_elapsed32(last_check) < 10) {
+        return false; // rate-limit the GPIO reads
+    }
+    last_check = timer_read32();
+
+#if defined(BOARD_POWER_FAULT_PIN) || defined(RGB_POWER_FAULT_PIN)
+    bool fault_now = false;
+#    ifdef BOARD_POWER_FAULT_PIN
+    fault_now |= !gpio_read_pin(BOARD_POWER_FAULT_PIN); // active-low fault comparator output
+#    endif
+#    ifdef RGB_POWER_FAULT_PIN
+    fault_now |= !gpio_read_pin(RGB_POWER_FAULT_PIN);
+#    endif
+
+    if (fault_now && !fault_latched) {
+        fault_latched = true;
+        return true; // rising edge into fault -- caller should recover
+    }
+    if (!fault_now) {
+        fault_latched = false;
+    }
+#endif
+    return false;
+}
+
 //----------------------------------------------------------
 // Initialisation
 
@@ -60,27 +152,35 @@ void keyboard_post_init_kb(void) {
     gpio_write_pin_high(EXTERNAL_FLASH_SPI_SLAVE_SELECT_PIN);
 #endif // EXTERNAL_FLASH_SPI_SLAVE_SELECT_PIN
 
-    // Turn on the LCD
-    gpio_set_pin_output(LCD_POWER_ENABLE_PIN);
-    gpio_write_pin_high(LCD_POWER_ENABLE_PIN);
+#if defined(BOARD_POWER_FAULT_PIN)
+    gpio_set_pin_input(BOARD_POWER_FAULT_PIN);
+#endif
+#if defined(RGB_POWER_FAULT_PIN)
+    gpio_set_pin_input(RGB_POWER_FAULT_PIN);
+#endif
 
-    // Let the LCD get some power...
-    wait_ms(150);
-
-    // Initialise the LCD
-    lcd = qp_ili9341_make_spi_device(240, 320, LCD_CS_PIN, LCD_DC_PIN, LCD_RST_PIN, 4, 0);
-    qp_init(lcd, QP_ROTATION_0);
-
-    // Turn on the LCD and clear the display
-    qp_power(lcd, true);
-    qp_rect(lcd, 0, 0, 239, 319, HSV_BLACK, true);
-
-    // Turn on the LCD backlight
-    backlight_enable();
-    backlight_level(BACKLIGHT_LEVELS);
+    // Turn on the LCD (full init)
+    djinn_lcd_power_on(true);
 
     // Allow for user post-init
     keyboard_post_init_user();
+}
+
+//----------------------------------------------------------
+// Suspend / resume (e.g. KVM-triggered USB suspend)
+//
+// Djinn previously had no suspend hooks at all, so QMK's generic suspend
+// handling (which only knows about OLED/RGB/backlight by default) left
+// the LCD completely unmanaged across a suspend/resume cycle.
+
+void suspend_power_down_kb(void) {
+    djinn_lcd_power_off();
+    suspend_power_down_user();
+}
+
+void suspend_wakeup_init_kb(void) {
+    djinn_lcd_power_on(true);
+    suspend_wakeup_init_user();
 }
 
 //----------------------------------------------------------
@@ -204,6 +304,21 @@ void housekeeping_task_kb(void) {
         if (rgb_matrix_is_enabled() != peripherals_on) {
             rgb_matrix_disable_noeeprom();
         }
+    }
+
+    // Self-heal the LCD the same way RGB already does above: if a power
+    // fault was detected (e.g. a KVM switch glitching VBUS/the board's
+    // power rail) do a full re-init rather than assuming the panel
+    // survived. This is the fix for "screen doesn't come back until I
+    // unplug/replug" -- previously nothing ever re-ran LCD bring-up after
+    // the very first boot.
+    if (djinn_power_fault_seen()) {
+        djinn_lcd_power_on(true);
+    } else if (peripherals_on) {
+        // Cheaply re-assert the enable pin every tick, same as RGB above.
+        // This alone won't recover a controller that lost its internal
+        // state, but it does recover a pin/latch that got left low.
+        gpio_write_pin_high(LCD_POWER_ENABLE_PIN);
     }
 
     // Match the backlight to the LCD state
