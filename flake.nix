@@ -36,8 +36,9 @@
               echo "  cd qmk_firmware"
               echo ""
             else
-              echo "Build:  qmk compile -kb tzarc/djinn/rev2 -km default"
-              echo "Flash:  qmk flash   -kb tzarc/djinn/rev2 -km default"
+              echo "Build:      qmk compile -kb tzarc/djinn/rev2 -km default"
+              echo "Compile DB: qmk compile -kb tzarc/djinn/rev2 -km default --compiledb"
+              echo "Flash:      qmk flash   -kb tzarc/djinn/rev2 -km default"
               echo ""
               echo "(Put the half you're flashing into its bootloader first: press RESET,"
               echo " or hold the top-left key while plugging it in.)"

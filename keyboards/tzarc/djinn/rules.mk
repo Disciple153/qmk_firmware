@@ -14,5 +14,3 @@ SRC += \
 	graphics/icons/icons8-low-volume-50.qgf.c \
 	graphics/icons/icons8-mute-50.qgf.c \
 	graphics/icons/icons8-voice-50.qgf.c
-
-DEFAULT_FOLDER = tzarc/djinn/rev2
