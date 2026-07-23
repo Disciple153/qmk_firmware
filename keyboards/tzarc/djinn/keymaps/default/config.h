@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
+// Increase LCD power-on delay for more reliable initialization
+#define LCD_POWER_ON_DELAY_MS 300
+
 // Uncomment the following if your board uses 1.5A and 3.0A hold current fuses.
-// #define DJINN_SUPPORTS_3A_FUSE
+#define DJINN_SUPPORTS_3A_FUSE
 
 // Encoder settings
 #define ENCODER_RESOLUTION 2
@@ -61,3 +64,5 @@
 #define ENABLE_RGB_MATRIX_MULTISPLASH
 #define ENABLE_RGB_MATRIX_SOLID_SPLASH
 #define ENABLE_RGB_MATRIX_SOLID_MULTISPLASH
+
+// #define QUANTUM_PAINTER_SUPPORTS_256_PALETTE TRUE

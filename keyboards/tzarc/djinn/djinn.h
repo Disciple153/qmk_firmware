@@ -5,6 +5,16 @@
 #include "qp.h"
 
 //----------------------------------------------------------
+// Layer definitions
+
+enum djinn_layers {
+    _QWERTY,
+    _MEDIA,
+    _RGB,
+    _ADJUST
+};
+
+//----------------------------------------------------------
 // General stuff
 
 extern painter_device_t lcd;
