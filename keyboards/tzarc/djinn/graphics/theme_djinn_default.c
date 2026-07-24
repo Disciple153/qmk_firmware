@@ -139,18 +139,18 @@ void draw_ui_user(bool force_redraw) {
     static uint16_t last_hue   = 0xFFFF;
     static uint16_t last_sat   = 0xFFFF;
 #if defined(RGB_MATRIX_ENABLE)
-    uint16_t curr_hue = rgb_matrix_get_hue();
-    uint16_t curr_sat = rgb_matrix_get_sat();
+    uint16_t curr_hue  = rgb_matrix_get_hue();
+    uint16_t curr_sat  = rgb_matrix_get_sat();
 #else
     uint16_t curr_hue = 0;
     uint16_t curr_sat = 255;
 #endif
     if (last_hue != curr_hue) {
-        last_hue   = curr_hue;
+        last_hue = curr_hue;
         redraw = true;
     }
     if (last_sat != curr_sat) {
-        last_sat   = curr_sat;
+        last_sat = curr_sat;
         redraw = true;
     }
 
@@ -168,12 +168,28 @@ void draw_ui_user(bool force_redraw) {
     }
 
 #if defined(RGB_MATRIX_ENABLE)
-    bool            rgb_effect_redraw = false;
-    static uint16_t last_effect       = 0xFFFF;
-    uint8_t         curr_effect       = rgb_matrix_config.mode;
-    if (last_effect != curr_effect) {
-        last_effect       = curr_effect;
-        rgb_effect_redraw = true;
+    bool            left_rgb_redraw = false;
+    static uint16_t last_speed  = 0xFFFF;
+    static uint16_t last_bright = 0xFFFF;
+    uint8_t         curr_speed  = rgb_matrix_get_speed();
+    uint16_t        curr_bright = rgb_matrix_get_val();
+
+    if (last_speed != curr_speed || last_bright != curr_bright) {
+        last_speed       = curr_speed;
+        last_bright      = curr_bright;
+        left_rgb_redraw = true;
+    }
+
+    bool            right_rgb_redraw = false;
+    static uint16_t last_effect = 0xFFFF;
+    static uint16_t last_back   = 0xFFFF;
+    uint8_t         curr_effect = rgb_matrix_config.mode;
+    uint16_t        curr_back   = get_backlight_level();
+
+    if (last_effect != curr_effect || last_back != curr_back) {
+        last_effect     = curr_effect;
+        last_back       = curr_back;
+        right_rgb_redraw = true;
     }
 #endif
 
@@ -198,11 +214,11 @@ void draw_ui_user(bool force_redraw) {
     }
 
     int ypos    = 4;
+    char buf[64] = {0};
 
     // LEFT DISPLAY
     if (is_keyboard_left()) {
         int icon_y = LCD_HEIGHT - media_play->height - 5;
-        char buf[64] = {0};
 
         // Always show layer
         if (redraw) {
@@ -229,19 +245,15 @@ void draw_ui_user(bool force_redraw) {
                 break;
             case _RGB:
 #if defined(RGB_MATRIX_ENABLE)
-                if (redraw || rgb_effect_redraw) {
-                    snprintf(buf, sizeof(buf), "rgb: %s", rgb_matrix_name(curr_effect));
-                    for (int i = 5; i < sizeof(buf); ++i) {
-                        if (buf[i] == 0) break;
-                        else if (buf[i] == '_') buf[i] = ' ';
-                        else if (buf[i - 1] == ' ') buf[i] = toupper(buf[i]);
-                        else if (buf[i - 1] != ' ') buf[i] = tolower(buf[i]);
-                    }
+                if (redraw || left_rgb_redraw) {
+                    snprintf(buf, sizeof(buf), "dial - hue: %d", curr_hue);
                     ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
-                }
-                if (redraw) {
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, "enc: hue", curr_hue, curr_sat);
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, "U/D: brightness  L/R: speed", curr_hue, curr_sat);
+
+                    snprintf(buf, sizeof(buf), "U/D - brightness: %d", curr_bright);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
+
+                    snprintf(buf, sizeof(buf), "L/R - speed: %d", curr_speed);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
                 }
 #endif
                 break;
@@ -264,10 +276,24 @@ void draw_ui_user(bool force_redraw) {
                 }
                 break;
             case _RGB:
-                if (redraw) {
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, "enc: saturation", curr_hue, curr_sat);
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, "L/R: effect  U/D: backlight", curr_hue, curr_sat);
+#if defined(RGB_MATRIX_ENABLE)
+                if (redraw || right_rgb_redraw) {
+                    snprintf(buf, sizeof(buf), "dial - saturation: %d", curr_sat);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
+
+                    snprintf(buf, sizeof(buf), "U/D - backlight: %d", curr_back);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
+
+                    snprintf(buf, sizeof(buf), "L/R - effect: %s", rgb_matrix_name(curr_effect));
+                    for (int i = 5; i < sizeof(buf); ++i) {
+                        if (buf[i] == 0) break;
+                        else if (buf[i] == '_') buf[i] = ' ';
+                        else if (buf[i - 1] == ' ') buf[i] = toupper(buf[i]);
+                        else if (buf[i - 1] != ' ') buf[i] = tolower(buf[i]);
+                    }
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
                 }
+#endif
                 break;
             default:
                 break;
