@@ -125,9 +125,9 @@ int centered_x_offset(painter_image_handle_t image, int offset, int spacing) {
     return LCD_CENTER_X - (image->width / 2) + ((image->width + spacing) * offset);
 }
 
-int print_and_clear(int xpos, int ypos, const char *text, uint16_t curr_hue, uint16_t curr_sat) {
+int print_and_clear(int xpos, int ypos, const char *text, uint16_t curr_hue, uint16_t curr_sat, uint16_t margin_r) {
     xpos += qp_drawtext_recolor(lcd, xpos, ypos, thintel, text, curr_hue, curr_sat, 255, curr_hue, curr_sat, 0);
-    qp_rect(lcd, xpos, ypos, MARGIN_R, ypos + thintel->line_height, 0, 0, 0, true);
+    qp_rect(lcd, xpos, ypos, margin_r, ypos + thintel->line_height, 0, 0, 0, true);
 
     return ypos + thintel->line_height + 4;
 }
@@ -223,17 +223,17 @@ void draw_ui_user(bool force_redraw) {
         // Always show layer
         if (redraw) {
             snprintf(buf, sizeof(buf), "layer: %s", layer_name);
-            ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
+            ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
         }
         else {
-            ypos += thintel->line_height + 4;
+            ypos += (thintel->line_height + 4) * 1;
         }
 
         switch (curr_layer) {
             case _QWERTY:
                 if (redraw || wpm_redraw) {
                     snprintf(buf, sizeof(buf), "wpm: %d", (int)get_current_wpm());
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
                 }
                 break;
             case _MEDIA:
@@ -247,13 +247,13 @@ void draw_ui_user(bool force_redraw) {
 #if defined(RGB_MATRIX_ENABLE)
                 if (redraw || left_rgb_redraw) {
                     snprintf(buf, sizeof(buf), "dial - hue: %d", curr_hue);
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
 
                     snprintf(buf, sizeof(buf), "U/D - brightness: %d", curr_bright);
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
 
                     snprintf(buf, sizeof(buf), "L/R - speed: %d", curr_speed);
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
                 }
 #endif
                 break;
@@ -267,6 +267,29 @@ void draw_ui_user(bool force_redraw) {
         int icon_y = LCD_HEIGHT - volume_mute->height - 5;
 
         switch (curr_layer) {
+            case _QWERTY:
+                if (redraw) {
+                    switch (detected_host_os()) {
+                        case OS_MACOS:
+                            snprintf(buf, sizeof(buf), "os: MacOS");
+                            break;
+                        case OS_IOS:
+                            snprintf(buf, sizeof(buf), "os: IOS");
+                            break;
+                        case OS_WINDOWS:
+                            snprintf(buf, sizeof(buf), "os: Windows");
+                            break;
+                        case OS_LINUX:
+                            snprintf(buf, sizeof(buf), "os: Linux");
+                            break;
+                        case OS_UNSURE:
+                            snprintf(buf, sizeof(buf), "os: unknown");
+                            break;
+                    }
+
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
+                }
+                break;
             case _MEDIA:
                 // Volume control icons at bottom for _MEDIA and _RGB layers
                 if (redraw) {
@@ -279,10 +302,10 @@ void draw_ui_user(bool force_redraw) {
 #if defined(RGB_MATRIX_ENABLE)
                 if (redraw || right_rgb_redraw) {
                     snprintf(buf, sizeof(buf), "dial - saturation: %d", curr_sat);
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
 
                     snprintf(buf, sizeof(buf), "U/D - backlight: %d", curr_back);
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
 
                     snprintf(buf, sizeof(buf), "L/R - effect: %s", rgb_matrix_name(curr_effect));
                     for (int i = 5; i < sizeof(buf); ++i) {
@@ -291,7 +314,7 @@ void draw_ui_user(bool force_redraw) {
                         else if (buf[i - 1] == ' ') buf[i] = toupper(buf[i]);
                         else if (buf[i - 1] != ' ') buf[i] = tolower(buf[i]);
                     }
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
                 }
 #endif
                 break;
