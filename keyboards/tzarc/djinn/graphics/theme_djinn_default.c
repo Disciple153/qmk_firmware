@@ -138,6 +138,7 @@ void draw_ui_user(bool force_redraw) {
     bool            redraw = force_redraw;
     static uint16_t last_hue   = 0xFFFF;
     static uint16_t last_sat   = 0xFFFF;
+    static os_variant_t last_os_variant = OS_UNSURE;
 #if defined(RGB_MATRIX_ENABLE)
     uint16_t curr_hue  = rgb_matrix_get_hue();
     uint16_t curr_sat  = rgb_matrix_get_sat();
@@ -152,6 +153,10 @@ void draw_ui_user(bool force_redraw) {
     if (last_sat != curr_sat) {
         last_sat = curr_sat;
         redraw = true;
+    }
+    if (last_os_variant != theme_state.os_variant) {
+        last_os_variant = theme_state.os_variant;
+        redraw          = true;
     }
 
     static uint32_t last_layer_state = 0;
@@ -269,7 +274,7 @@ void draw_ui_user(bool force_redraw) {
         switch (curr_layer) {
             case _QWERTY:
                 if (redraw) {
-                    switch (detected_host_os()) {
+                    switch (theme_state.os_variant) {
                         case OS_MACOS:
                             snprintf(buf, sizeof(buf), "os: MacOS");
                             break;
@@ -356,6 +361,7 @@ void theme_state_update(void) {
     if (is_keyboard_master()) {
         // Keep the scan rate in sync
         theme_state.scan_rate = get_matrix_scan_rate();
+        theme_state.os_variant = detected_host_os();
     }
 }
 
