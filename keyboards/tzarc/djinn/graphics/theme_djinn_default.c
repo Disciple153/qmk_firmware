@@ -9,6 +9,7 @@
 #include "backlight.h"
 #include "transactions.h"
 #include "split_util.h"
+#include "raw_hid.h"
 
 #include "djinn.h"
 #include "theme_djinn_default.h"
@@ -237,8 +238,14 @@ void draw_ui_user(bool force_redraw) {
         switch (curr_layer) {
             case _QWERTY:
                 if (redraw || wpm_redraw) {
-                    snprintf(buf, sizeof(buf), "wpm: %d", (int)get_current_wpm());
+                    snprintf(buf, sizeof(buf), "time: %d:%d", theme_state.hour, theme_state.minute);
                     ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
+                    snprintf(buf, sizeof(buf), "wpm: %d", (int)get_current_wpm());
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
+                    snprintf(buf, sizeof(buf), "cpu: %d", theme_state.cpu_pct);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
+                    snprintf(buf, sizeof(buf), "ram: %d", theme_state.mem_pct);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
                 }
                 break;
             case _MEDIA:
@@ -394,4 +401,28 @@ void theme_state_sync(void) {
             }
         }
     }
+}
+
+bool via_command_kb(uint8_t *data, uint8_t length) {
+    uint8_t *command_id = &(data[0]);
+
+    switch (*command_id) {
+        case ID_STATS_UPDATE:
+            theme_state.cpu_pct = data[1];
+            theme_state.mem_pct = data[2];
+            theme_state.hour    = data[3];
+            theme_state.minute  = data[4];
+            // TODO: draw cpu_pct/mem_pct onto the LCD via theme_djinn_default
+            break;
+        // case ID_FFT_UPDATE:
+        //     uint8_t band_count = data[1];
+        //     uint8_t *bands = &data[2];
+        //     // TODO: drive a visualizer effect off `bands`
+        //   break;
+        default:
+            return false;  // not ours — let VIA handle it normally
+    }
+
+    raw_hid_send(data, length);
+    return true;
 }
