@@ -62,14 +62,18 @@ enum {
 #    include "rgb_matrix_effects.inc"
 #    undef RGB_MATRIX_EFFECT
 #    ifdef RGB_MATRIX_CUSTOM_KB
+#        define RGB_MATRIX_EFFECT(x) RGB_MATRIX_EFFECT_##x,
 #        include "rgb_matrix_kb.inc"
+#        undef RGB_MATRIX_EFFECT
 #    endif
 #    ifdef RGB_MATRIX_CUSTOM_USER
+#        define RGB_MATRIX_EFFECT(x) RGB_MATRIX_EFFECT_##x,
 #        include "rgb_matrix_user.inc"
+#        undef RGB_MATRIX_EFFECT
 #    endif
 };
 
-#    define RGB_MATRIX_EFFECT(x)    \
+#    define RGB_MATRIX_EFFECT(x) \
         case RGB_MATRIX_EFFECT_##x: \
             return #x;
 const char *rgb_matrix_name(uint8_t effect) {
@@ -79,10 +83,18 @@ const char *rgb_matrix_name(uint8_t effect) {
 #    include "rgb_matrix_effects.inc"
 #    undef RGB_MATRIX_EFFECT
 #    ifdef RGB_MATRIX_CUSTOM_KB
+#        define RGB_MATRIX_EFFECT(x) \
+            case RGB_MATRIX_EFFECT_##x: \
+                return #x;
 #        include "rgb_matrix_kb.inc"
+#        undef RGB_MATRIX_EFFECT
 #    endif
 #    ifdef RGB_MATRIX_CUSTOM_USER
+#        define RGB_MATRIX_EFFECT(x) \
+            case RGB_MATRIX_EFFECT_##x: \
+                return #x;
 #        include "rgb_matrix_user.inc"
+#        undef RGB_MATRIX_EFFECT
 #    endif
         default:
             return "UNKNOWN";

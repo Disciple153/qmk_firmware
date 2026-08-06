@@ -3,6 +3,7 @@ ENCODER_MAP_ENABLE = yes
 SWAP_HANDS_ENABLE = no
 OS_DETECTION_ENABLE = yes
 VIA_ENABLE = yes
+RGB_MATRIX_CUSTOM_USER = yes
 
 VPATH += keyboards/tzarc/djinn/graphics
 SRC += \
