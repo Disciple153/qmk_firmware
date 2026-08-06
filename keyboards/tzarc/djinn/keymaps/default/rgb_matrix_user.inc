@@ -1,20 +1,28 @@
 // !!! DO NOT ADD #pragma once !!! //
 
+#ifndef RGB_MATRIX_EFFECT
+#define RGB_MATRIX_EFFECT(x)
+#endif
+
 // Step 1.
 // Declare custom effects using the RGB_MATRIX_EFFECT macro
 // (note the lack of semicolon after the macro!)
-RGB_MATRIX_EFFECT(my_cool_effect)
+RGB_MATRIX_EFFECT(audio_fft)
 RGB_MATRIX_EFFECT(my_cool_effect2)
 
 // Step 2.
 // Define effects inside the `RGB_MATRIX_CUSTOM_EFFECT_IMPLS` ifdef block
 #ifdef RGB_MATRIX_CUSTOM_EFFECT_IMPLS
 
+#include "theme_djinn_default.h"
+
 // e.g: A simple effect, self-contained within a single method
-static bool my_cool_effect(effect_params_t* params) {
+static bool audio_fft(effect_params_t* params) {
   RGB_MATRIX_USE_LIMITS(led_min, led_max);
+  uint8_t brightness = theme_state.fft_bands[0];
+
   for (uint8_t i = led_min; i < led_max; i++) {
-    rgb_matrix_set_color(i, 0xff, 0xff, 0x00);
+    rgb_matrix_set_color(i, brightness, brightness, brightness);
   }
   return rgb_matrix_check_finished_leds(led_max);
 }

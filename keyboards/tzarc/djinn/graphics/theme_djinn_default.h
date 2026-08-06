@@ -29,6 +29,8 @@ typedef struct theme_runtime_config {
     uint8_t mem_pct;
     uint8_t hour;
     uint8_t minute;
+    uint8_t fft_band_count;
+    uint8_t fft_bands[14];
 } theme_runtime_config;
 #pragma pack(pop)
 
@@ -39,8 +41,6 @@ enum custom_hid_ids {
 };
 
 extern theme_runtime_config theme_state;
-extern uint8_t fft_band_count;
-extern uint8_t fft_bands[14];
 
 void theme_init(void);
 void theme_state_update(void);

@@ -10,6 +10,7 @@
 #include "transactions.h"
 #include "split_util.h"
 #include "raw_hid.h"
+// #include "rgb_matrix_user_state.h"
 
 #include "djinn.h"
 #include "theme_djinn_default.h"
@@ -248,10 +249,10 @@ void draw_ui_user(bool force_redraw) {
                     snprintf(buf, sizeof(buf), "ram: %d", theme_state.mem_pct);
                     ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
 
-                    snprintf(buf, sizeof(buf), "fft bands: %d", fft_band_count);
+                    snprintf(buf, sizeof(buf), "fft bands: %d", theme_state.fft_band_count);
                     ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
-                    for (int i = 0; i < fft_band_count; ++i) {
-                        snprintf(buf, sizeof(buf), "band %d: %d", i, fft_bands[i]);
+                    for (int i = 0; i < theme_state.fft_band_count; ++i) {
+                        snprintf(buf, sizeof(buf), "band %d: %d", i, theme_state.fft_bands[i]);
                         ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
                     }
                 }
@@ -424,13 +425,14 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
             theme_state.minute  = data[4];
             break;
         case ID_FFT_UPDATE:
-            fft_band_count = data[1];
 
-            if (fft_band_count > MAX_FFT_BANDS) {
-                fft_band_count = MAX_FFT_BANDS;
+            if (data[1] > MAX_FFT_BANDS) {
+                theme_state.fft_band_count = MAX_FFT_BANDS;
+            } else {
+                theme_state.fft_band_count = data[1];
             }
 
-            memcpy(fft_bands, &data[2], fft_band_count);
+            memcpy(theme_state.fft_bands, &data[2], theme_state.fft_band_count);
             // TODO: drive a visualizer effect off `bands`
             if (fft_band_count == 14) {
                 // Set brightness for each key column based on the FFT band values
