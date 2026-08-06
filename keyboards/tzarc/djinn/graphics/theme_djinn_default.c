@@ -31,17 +31,6 @@
 #include "icons/icons8-voice-50.qgf.h"
 #include "thintel15.qff.h"
 
-// LCD dimensions
-#define LCD_WIDTH 240
-#define LCD_HEIGHT 320
-#define LCD_CENTER_X (LCD_WIDTH / 2)
-#define LCD_CENTER_Y (LCD_HEIGHT / 2)
-#define LCD_WIDTH_I (LCD_WIDTH - 1)
-#define LCD_HEIGHT_I (LCD_HEIGHT - 1)
-#define BAR_WIDTH 8
-#define MARGIN 9
-#define MARGIN_R (LCD_WIDTH_I - MARGIN)
-#define TEXT_MARGIN 16
 
 static painter_image_handle_t djinn_logo;
 static painter_image_handle_t lock_caps_on;
@@ -246,6 +235,13 @@ void draw_ui_user(bool force_redraw) {
                     ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
                     snprintf(buf, sizeof(buf), "ram: %d", theme_state.mem_pct);
                     ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
+
+                    snprintf(buf, sizeof(buf), "fft bands: %d", fft_band_count);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
+                    for (int i = 0; i < fft_band_count; ++i) {
+                        snprintf(buf, sizeof(buf), "band %d: %d", i, fft_bands[i]);
+                        ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
+                    }
                 }
                 break;
             case _MEDIA:
@@ -349,6 +345,8 @@ void draw_ui_user(bool force_redraw) {
 // Sync
 
 theme_runtime_config theme_state;
+uint8_t fft_band_count = 0;
+uint8_t fft_bands[14] = {0};
 
 void rpc_theme_sync_callback(uint8_t m2s_size, const void *m2s_buffer, uint8_t s2m_size, void *s2m_buffer) {
     if (m2s_size == sizeof(theme_state)) {
@@ -412,13 +410,25 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
             theme_state.mem_pct = data[2];
             theme_state.hour    = data[3];
             theme_state.minute  = data[4];
-            // TODO: draw cpu_pct/mem_pct onto the LCD via theme_djinn_default
             break;
-        // case ID_FFT_UPDATE:
-        //     uint8_t band_count = data[1];
-        //     uint8_t *bands = &data[2];
-        //     // TODO: drive a visualizer effect off `bands`
-        //   break;
+        case ID_FFT_UPDATE:
+            fft_band_count = data[1];
+
+            if (fft_band_count > MAX_FFT_BANDS) {
+                fft_band_count = MAX_FFT_BANDS;
+            }
+
+            memcpy(fft_bands, &data[2], fft_band_count);
+            // TODO: drive a visualizer effect off `bands`
+            if (fft_band_count == 14) {
+                // Set brightness for each key column based on the FFT band values
+
+            } else if (fft_band_count == 7) {
+                // 7-band visualizer
+            } else {
+                // Unknown band count
+            }
+          break;
         default:
             return false;  // not ours — let VIA handle it normally
     }

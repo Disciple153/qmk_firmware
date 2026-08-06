@@ -3,6 +3,20 @@
 #pragma once
 #include "os_detection.h"
 
+// LCD dimensions
+#define LCD_WIDTH 240
+#define LCD_HEIGHT 320
+#define LCD_CENTER_X (LCD_WIDTH / 2)
+#define LCD_CENTER_Y (LCD_HEIGHT / 2)
+#define LCD_WIDTH_I (LCD_WIDTH - 1)
+#define LCD_HEIGHT_I (LCD_HEIGHT - 1)
+#define BAR_WIDTH 8
+#define MARGIN 9
+#define MARGIN_R (LCD_WIDTH_I - MARGIN)
+#define TEXT_MARGIN 16
+
+#define MAX_FFT_BANDS 14
+
 //----------------------------------------------------------
 // Sync
 
@@ -25,6 +39,8 @@ enum custom_hid_ids {
 };
 
 extern theme_runtime_config theme_state;
+extern uint8_t fft_band_count;
+extern uint8_t fft_bands[14];
 
 void theme_init(void);
 void theme_state_update(void);
