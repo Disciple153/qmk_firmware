@@ -20,6 +20,7 @@
 
 // Allow for an extra sync command over the split
 #define SPLIT_TRANSACTION_IDS_USER THEME_DATA_SYNC
+#define RPC_M2S_BUFFER_SIZE 64
 
 // RGB Effects
 #define ENABLE_RGB_MATRIX_ALPHAS_MODS

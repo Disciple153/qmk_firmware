@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 #include "os_detection.h"
+#include "color.h"
 
 // LCD dimensions
 #define LCD_WIDTH 240
@@ -31,13 +32,16 @@ typedef struct theme_runtime_config {
     uint8_t minute;
     uint8_t fft_band_count;
     uint8_t fft_bands[14];
+    HSV album_colors[7];
 } theme_runtime_config;
 #pragma pack(pop)
 
 enum custom_hid_ids {
-    ID_STATS_UPDATE = 0x80,
-    ID_RGB_STATE    = 0x81,
-    ID_FFT_UPDATE   = 0x82,
+    ID_RGB_GET          = 0x80,
+    ID_RGB_SET          = 0x81,
+    ID_PC_STATS_UPDATE  = 0x82,
+    ID_FFT_SET          = 0x83,
+    ID_ALBUM_COLORS_SET = 0x84,
 };
 
 extern theme_runtime_config theme_state;

@@ -249,12 +249,8 @@ void draw_ui_user(bool force_redraw) {
                     snprintf(buf, sizeof(buf), "ram: %d", theme_state.mem_pct);
                     ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
 
-                    snprintf(buf, sizeof(buf), "fft bands: %d", theme_state.fft_band_count);
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
-                    for (int i = 0; i < theme_state.fft_band_count; ++i) {
-                        snprintf(buf, sizeof(buf), "band %d: %d", i, theme_state.fft_bands[i]);
-                        ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
-                    }
+                    snprintf(buf, sizeof(buf), "album_colors 0: h: %d, s: %d", theme_state.album_colors[0].h, theme_state.album_colors[0].s);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
                 }
                 break;
             case _MEDIA:
@@ -414,17 +410,42 @@ void theme_state_sync(void) {
     }
 }
 
+void encode_rgb_state(uint8_t *data) {
+    // data[0] is the command id
+    // data[1] is a request/response ID
+    data[2] = rgb_matrix_get_hue();
+    data[3] = rgb_matrix_get_sat();
+    data[4] = rgb_matrix_get_val();
+    data[5] = rgb_matrix_get_speed();
+    data[6] = rgb_matrix_get_mode();
+    data[7] = get_backlight_level();
+}
+
 bool via_command_kb(uint8_t *data, uint8_t length) {
     uint8_t *command_id = &(data[0]);
 
     switch (*command_id) {
-        case ID_STATS_UPDATE:
+        case ID_RGB_GET:
+            encode_rgb_state(data);
+            break;
+
+        case ID_RGB_SET:
+            rgb_matrix_sethsv_noeeprom(data[2], data[3], data[4]);
+            rgb_matrix_set_speed_noeeprom(data[5]);
+            rgb_matrix_mode_noeeprom(data[6]);
+            backlight_level_noeeprom(data[7]);
+
+            encode_rgb_state(data);
+            break;
+
+        case ID_PC_STATS_UPDATE:
             theme_state.cpu_pct = data[1];
             theme_state.mem_pct = data[2];
             theme_state.hour    = data[3];
             theme_state.minute  = data[4];
             break;
-        case ID_FFT_UPDATE:
+
+        case ID_FFT_SET:
 
             if (data[1] > MAX_FFT_BANDS) {
                 theme_state.fft_band_count = MAX_FFT_BANDS;
@@ -442,7 +463,18 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
             } else {
                 // Unknown band count
             }
-          break;
+            break;
+
+        case ID_ALBUM_COLORS_SET:
+            uint8_t count = data[1];
+            if (count > 7) count = 7;
+
+            for (uint8_t i = 0; i < count; ++i) {
+                theme_state.album_colors[i].h = data[2 + (i * 2)];
+                theme_state.album_colors[i].s = data[2 + (i * 2) + 1];
+            }
+            break;
+
         default:
             return false;  // not ours — let VIA handle it normally
     }
