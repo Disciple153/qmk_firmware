@@ -6,8 +6,6 @@ Row 0 is at the top
 TODO:
 - Interpolate FFT updates
 - Implement reactive effects
-- Only display time, CPU, and RAM when connected to the hid-bridge service
-- Increase keyboard sleep timeout
 - Display notifications on the LCD
 - Turn off FFT effect when updates are not being received
 - Customize the base color for FFT effects

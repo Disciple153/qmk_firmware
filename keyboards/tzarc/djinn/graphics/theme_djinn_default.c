@@ -10,6 +10,7 @@
 #include "transactions.h"
 #include "split_util.h"
 #include "raw_hid.h"
+#include "usb_device_state.h"
 // #include "rgb_matrix_user_state.h"
 
 #include "djinn.h"
@@ -245,14 +246,18 @@ void draw_ui_user(bool force_redraw) {
         switch (curr_layer) {
             case _QWERTY:
                 if (redraw || wpm_redraw) {
-                    snprintf(buf, sizeof(buf), "time: %d:%d", theme_state.hour, theme_state.minute);
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
+                    if (theme_state.hour > 0 || theme_state.minute > 0) {
+                        snprintf(buf, sizeof(buf), "time: %d:%d", theme_state.hour, theme_state.minute);
+                        ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
+                    }
                     snprintf(buf, sizeof(buf), "wpm: %d", (int)get_current_wpm());
                     ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
-                    snprintf(buf, sizeof(buf), "cpu: %d", theme_state.cpu_pct);
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
-                    snprintf(buf, sizeof(buf), "ram: %d", theme_state.mem_pct);
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
+                    if (theme_state.cpu_pct > 0 || theme_state.mem_pct > 0) {
+                        snprintf(buf, sizeof(buf), "cpu: %d", theme_state.cpu_pct);
+                        ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
+                        snprintf(buf, sizeof(buf), "ram: %d", theme_state.mem_pct);
+                        ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
+                    }
                 }
                 break;
             case _MEDIA:
@@ -377,6 +382,17 @@ void theme_init(void) {
 
     // Reset the initial shared data value between master and slave
     memset(&theme_state, 0, sizeof(theme_state));
+}
+
+void notify_usb_device_state_change_kb(struct usb_device_state usb_device_state) {
+    static usb_configure_state_t last_configure_state = USB_DEVICE_STATE_NO_INIT;
+    if (usb_device_state.configure_state == USB_DEVICE_STATE_CONFIGURED
+            && last_configure_state != USB_DEVICE_STATE_CONFIGURED) {
+        memset(&theme_state, 0, sizeof(theme_state));
+        draw_ui_user(true);
+    }
+    last_configure_state = usb_device_state.configure_state;
+    notify_usb_device_state_change_user(usb_device_state);
 }
 
 void theme_state_update(void) {
