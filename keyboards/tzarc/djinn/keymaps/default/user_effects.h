@@ -5,15 +5,13 @@ Row 0 is at the top
 
 TODO:
 - Interpolate FFT updates
-- Get color(s) from album art
 - Implement reactive effects
-- Remove FFT logging from display
 - Display custom "os" string when connected to the hid-bridge service
 - Only display time, CPU, and RAM when connected to the hid-bridge service
 - Increase keyboard sleep timeout
-- Get this file to play nicely in the editor, or just move the effects to a separate file
 - Display notifications on the LCD
 - Turn off FFT effect when updates are not being received
+- Customize the base color for FFT effects
 */
 
 #include "theme_djinn_default.h"

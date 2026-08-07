@@ -248,9 +248,6 @@ void draw_ui_user(bool force_redraw) {
                     ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
                     snprintf(buf, sizeof(buf), "ram: %d", theme_state.mem_pct);
                     ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
-
-                    snprintf(buf, sizeof(buf), "album_colors 0: h: %d, s: %d", theme_state.album_colors[0].h, theme_state.album_colors[0].s);
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
                 }
                 break;
             case _MEDIA:
