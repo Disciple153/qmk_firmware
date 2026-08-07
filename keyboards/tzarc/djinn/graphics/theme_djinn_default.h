@@ -33,6 +33,7 @@ typedef struct theme_runtime_config {
     uint8_t fft_band_count;
     uint8_t fft_bands[14];
     HSV album_colors[7];
+    char host_string[20];
 } theme_runtime_config;
 #pragma pack(pop)
 
@@ -42,6 +43,7 @@ enum custom_hid_ids {
     ID_PC_STATS_UPDATE  = 0x82,
     ID_FFT_SET          = 0x83,
     ID_ALBUM_COLORS_SET = 0x84,
+    ID_HOST_STRING      = 0x85
 };
 
 extern theme_runtime_config theme_state;

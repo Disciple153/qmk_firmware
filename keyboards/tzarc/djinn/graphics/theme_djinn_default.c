@@ -142,6 +142,7 @@ void draw_ui_user(bool force_redraw) {
     static uint16_t last_hue   = 0xFFFF;
     static uint16_t last_sat   = 0xFFFF;
     static os_variant_t last_os_variant = OS_UNSURE;
+    static char last_custom_os_string[20] = {0};
 #if defined(RGB_MATRIX_ENABLE)
     uint16_t curr_hue  = rgb_matrix_get_hue();
     uint16_t curr_sat  = rgb_matrix_get_sat();
@@ -160,6 +161,10 @@ void draw_ui_user(bool force_redraw) {
     if (last_os_variant != theme_state.os_variant) {
         last_os_variant = theme_state.os_variant;
         redraw          = true;
+    }
+    if (memcmp(last_custom_os_string, theme_state.host_string, sizeof(last_custom_os_string)) != 0) {
+        memcpy(last_custom_os_string, theme_state.host_string, sizeof(last_custom_os_string));
+        redraw = true;
     }
 
     static uint32_t last_layer_state = 0;
@@ -302,6 +307,11 @@ void draw_ui_user(bool force_redraw) {
                     }
 
                     ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
+
+                    if (theme_state.host_string[0] != 0) {
+                        snprintf(buf, sizeof(buf), "host: %s", theme_state.host_string);
+                        ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
+                    }
                 }
                 break;
             case _MEDIA:
@@ -351,6 +361,7 @@ void draw_ui_user(bool force_redraw) {
 // Sync
 
 theme_runtime_config theme_state;
+_Static_assert(sizeof(theme_runtime_config) <= RPC_M2S_BUFFER_SIZE, "theme_runtime_config exceeds RPC_M2S_BUFFER_SIZE");
 uint8_t fft_band_count = 0;
 uint8_t fft_bands[14] = {0};
 
@@ -470,6 +481,11 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
                 theme_state.album_colors[i].h = data[2 + (i * 2)];
                 theme_state.album_colors[i].s = data[2 + (i * 2) + 1];
             }
+            break;
+
+        case ID_HOST_STRING:
+            memset(theme_state.host_string, 0, sizeof(theme_state.host_string));
+            memcpy(theme_state.host_string, &data[1], sizeof(theme_state.host_string) - 1);
             break;
 
         default:

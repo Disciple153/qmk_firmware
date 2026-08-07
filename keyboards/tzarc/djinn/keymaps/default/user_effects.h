@@ -6,7 +6,6 @@ Row 0 is at the top
 TODO:
 - Interpolate FFT updates
 - Implement reactive effects
-- Display custom "os" string when connected to the hid-bridge service
 - Only display time, CPU, and RAM when connected to the hid-bridge service
 - Increase keyboard sleep timeout
 - Display notifications on the LCD
