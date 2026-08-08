@@ -4,11 +4,10 @@
 Row 0 is at the top
 
 TODO:
-- Interpolate FFT updates
 - Implement reactive effects
 - Display notifications on the LCD
-- Turn off FFT effect when updates are not being received
 - Customize the base color for FFT effects
+- Display more Album Art colors
 */
 
 #include "theme_djinn_default.h"
