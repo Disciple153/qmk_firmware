@@ -49,7 +49,7 @@ static bool audio_fft(effect_params_t* params) {
 
         lit_rows = value / ROW_RANGE;
 
-        if (fft_row > lit_rows) {
+        if (fft_row > lit_rows || !theme_state.fft_active) {
           value = 0;
         } else if (fft_row == lit_rows) {
           value = (value % ROW_RANGE) * 255 / ROW_RANGE;
@@ -103,7 +103,7 @@ static bool audio_fft_album(effect_params_t* params) {
 
         lit_rows = value / ROW_RANGE;
 
-        if (fft_row > lit_rows) {
+        if (fft_row > lit_rows || !theme_state.fft_active) {
           value = 0;
         } else if (fft_row == lit_rows) {
           value = (value % ROW_RANGE) * 255 / ROW_RANGE;

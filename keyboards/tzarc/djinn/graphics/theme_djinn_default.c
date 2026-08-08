@@ -395,11 +395,14 @@ void notify_usb_device_state_change_kb(struct usb_device_state usb_device_state)
     notify_usb_device_state_change_user(usb_device_state);
 }
 
+static uint32_t fft_last_update = 0;
+
 void theme_state_update(void) {
     if (is_keyboard_master()) {
         // Keep the scan rate in sync
         theme_state.scan_rate = get_matrix_scan_rate();
         theme_state.os_variant = detected_host_os();
+        theme_state.fft_active = (fft_last_update > 0) && (timer_elapsed32(fft_last_update) < 100);
     }
 }
 
@@ -478,6 +481,7 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
             }
 
             memcpy(theme_state.fft_bands, &data[2], theme_state.fft_band_count);
+            fft_last_update = timer_read32();
             // TODO: drive a visualizer effect off `bands`
             if (fft_band_count == 14) {
                 // Set brightness for each key column based on the FFT band values

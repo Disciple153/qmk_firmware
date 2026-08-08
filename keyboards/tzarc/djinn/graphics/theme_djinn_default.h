@@ -32,6 +32,7 @@ typedef struct theme_runtime_config {
     uint8_t minute;
     uint8_t fft_band_count;
     uint8_t fft_bands[14];
+    bool fft_active;
     HSV album_colors[7];
     char host_string[20];
 } theme_runtime_config;
