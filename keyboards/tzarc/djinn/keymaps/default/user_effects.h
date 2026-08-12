@@ -6,8 +6,6 @@ Row 0 is at the top
 TODO:
 - Implement reactive effects
 - Display notifications on the LCD
-- Extract duplicate code from position_effect_none_ and position_effect_scroll_.
-    - Probably add one more step after them to complete everything.
 */
 
 #include "theme_djinn_default.h"
@@ -25,6 +23,8 @@ static int album_color_count_fg = 0;
 static int album_color_count_bg = 0;
 static HSV cols_fg[MATRIX_COLS];
 static HSV cols_bg[MATRIX_COLS];
+static RGB col_fg_rgb[MATRIX_COLS];
+static RGB col_bg_rgb[MATRIX_COLS];
 static float cols_weight[MATRIX_COLS];
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,6 +37,7 @@ void color_effect_spectrum_(void);
 // void color_effect_pulse_(void);
 void position_effect_none_(void);
 void position_effect_scroll_(void);
+void write_position_matrix_(void);
 
 ////////////////////////////////////////////////////////////////////////////////
 // EFFECTS
@@ -198,6 +199,8 @@ static bool multi_effect(effect_params_t* params) {
         default:
             break;
     }
+
+    write_position_matrix_();
 
     return false;
 }
@@ -425,62 +428,40 @@ void color_effect_spectrum_() {
 // POSITION EFFECTS
 ////////////////////////////////////////////////////////////////////////////////
 
-void position_effect_none_() {
-    uint8_t fft_row, rows_begin, rows_end;
-    float value;
-    RGB rgb;
-    HSV fft_hsv = {
-        cols_fg[0].h,
-        cols_fg[0].s,
-        rgb_matrix_config.hsv.v
-    };
-
-    // TODO: There must be a better way than this nonsense.
-    if (is_keyboard_left()) {
-        rows_end = ROW_COUNT;
-    } else {
-        rows_end = MATRIX_ROWS - 1;
-    }
-
-    rows_begin = rows_end - ROW_COUNT;
-
-    for (uint8_t i = 0; i < RGB_MATRIX_LED_COUNT; i++) {
-        uint8_t flags = g_led_config.flags[i];
-
-        if (flags & LED_FLAG_UNDERGLOW) {
-            rgb = hsv_to_rgb(fft_hsv);
-            rgb_matrix_set_color(i, rgb.r, rgb.g, rgb.b);
-        }
-    }
-
-    for (uint8_t row = rows_begin; row < MATRIX_ROWS; row++) {
-        for (uint8_t col = 0; col < MATRIX_COLS; col++) {
-            uint8_t led = g_led_config.matrix_co[row][col];
-
-            if (led != NO_LED) {
-                fft_row = rows_end - 1 - row;
-
-                value = cols_weight[col];
-
-                value = (value * (float) ROW_COUNT) - (float) fft_row;
-                if (value < 0) {
-                    value = 0;
-                } else if (value > 1) {
-                    value = 1;
-                }
-
-                rgb = lerp_rgb_(
-                    hsv_to_rgb(cols_bg[col]),
-                    hsv_to_rgb(cols_fg[col]),
-                    value
-                );
-                rgb_matrix_set_color(led, rgb.r, rgb.g, rgb.b);
-            }
-        }
+void position_effect_none_(void) {
+    for (uint8_t col = 0; col < MATRIX_COLS; col++) {
+        col_bg_rgb[col] = hsv_to_rgb(cols_bg[col]);
+        col_fg_rgb[col] = hsv_to_rgb(cols_fg[col]);
     }
 }
 
-void position_effect_scroll_() {
+void position_effect_scroll_(void) {
+    float scroll_progress_full = (((float) sync_timer_read32() * MATRIX_COLS) / (theme_state.scroll_time_ds * 100));
+    float scroll_progress = scroll_progress_full - floor(scroll_progress_full);
+
+    float index = scroll_progress * MATRIX_COLS;
+    float index_decimal = index - floor(index);
+    int index_offset = (int) floor(index);
+
+    for (uint8_t col = 0; col < MATRIX_COLS; col++) {
+        int index_low = (col + index_offset) % MATRIX_COLS;
+        int index_high = (index_low + 1) % MATRIX_COLS;
+
+        col_fg_rgb[col] = lerp_rgb_(
+            hsv_to_rgb(cols_fg[index_low]),
+            hsv_to_rgb(cols_fg[index_high]),
+            index_decimal
+        );
+
+        col_bg_rgb[col] = lerp_rgb_(
+            hsv_to_rgb(cols_bg[index_low]),
+            hsv_to_rgb(cols_bg[index_high]),
+            index_decimal
+        );
+    }
+}
+
+void write_position_matrix_(void) {
     uint8_t fft_row, rows_begin, rows_end;
     float value;
     RGB rgb;
@@ -508,18 +489,6 @@ void position_effect_scroll_() {
         }
     }
 
-    float scroll_progress, scroll_progress_full;
-    float index, index_decimal;
-    int index_low, index_high;
-    RGB fg, bg;
-
-    scroll_progress_full = (((float) sync_timer_read32() * MATRIX_COLS) / (theme_state.scroll_time_ds * 100));
-    scroll_progress = scroll_progress_full - floor(scroll_progress_full);
-
-    index = scroll_progress * MATRIX_COLS;
-    index_decimal = index - floor(index);
-
-
     for (uint8_t row = rows_begin; row < MATRIX_ROWS; row++) {
         for (uint8_t col = 0; col < MATRIX_COLS; col++) {
             uint8_t led = g_led_config.matrix_co[row][col];
@@ -536,22 +505,7 @@ void position_effect_scroll_() {
                     value = 1;
                 }
 
-                index_low = (col + (int) floor(index)) % MATRIX_COLS;
-                index_high = (index_low + 1) % MATRIX_COLS;
-
-                fg = lerp_rgb_(
-                    hsv_to_rgb(cols_fg[index_low]),
-                    hsv_to_rgb(cols_fg[index_high]),
-                    index_decimal
-                );
-
-                bg = lerp_rgb_(
-                    hsv_to_rgb(cols_bg[index_low]),
-                    hsv_to_rgb(cols_bg[index_high]),
-                    index_decimal
-                );
-
-                rgb = lerp_rgb_(bg, fg, value );
+                rgb = lerp_rgb_(col_bg_rgb[col], col_fg_rgb[col], value);
                 rgb_matrix_set_color(led, rgb.r, rgb.g, rgb.b);
             }
         }
