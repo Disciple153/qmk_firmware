@@ -456,6 +456,9 @@ void encode_multi_effect_state(uint8_t *data) {
     data[3] = theme_state.color_effect;
     data[4] = theme_state.position_effect;
     data[5] = theme_state.scroll_time_ds;
+    data[6] = theme_state.secondary_color.h;
+    data[7] = theme_state.secondary_color.s;
+    data[8] = theme_state.secondary_color.v;
 }
 
 bool via_command_kb(uint8_t *data, uint8_t length) {
@@ -507,7 +510,9 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
         case ID_ALBUM_COLORS_SET:
             count = data[1];
             if (count > ALBUM_COLORS_COUNT) count = ALBUM_COLORS_COUNT;
-            theme_state.album_colors_count = ALBUM_COLORS_COUNT;
+            else if (count <= 0) count = 1;
+
+            theme_state.album_colors_count = count;
 
             for (uint8_t i = 0; i < ALBUM_COLORS_COUNT; ++i) {
                 theme_state.album_colors[i].h = data[2 + (i * 2)];
@@ -530,6 +535,9 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
             theme_state.color_effect = data[3];
             theme_state.position_effect = data[4];
             theme_state.scroll_time_ds = data[5];
+            theme_state.secondary_color.h = data[6];
+            theme_state.secondary_color.s = data[7];
+            theme_state.secondary_color.v = data[8];
 
             if (theme_state.scroll_time_ds < 1) {
                 theme_state.scroll_time_ds = 1;
