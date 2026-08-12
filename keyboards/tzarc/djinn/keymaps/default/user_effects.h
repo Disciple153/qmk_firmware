@@ -16,6 +16,8 @@ TODO:
     - color_effect
     - position_effect
     - scroll_time_ds
+- Extract duplicate code from position_effect_none_ and position_effect_scroll_.
+    - Probably add one more step after them to complete everything.
 */
 
 #include "theme_djinn_default.h"
@@ -32,7 +34,6 @@ static enum ColorSource color_source_bg = CS_VOID;
 static HSV cols_fg[MATRIX_COLS];
 static HSV cols_bg[MATRIX_COLS];
 static float cols_weight[MATRIX_COLS];
-static HSV album_colors[MATRIX_COLS];
 
 ////////////////////////////////////////////////////////////////////////////////
 // FORWARD DECLARATIONS
@@ -44,7 +45,6 @@ void color_effect_spectrum_(void);
 // void color_effect_pulse_(void);
 void position_effect_none_(void);
 void position_effect_scroll_(void);
-void set_album_colors_(void);
 
 ////////////////////////////////////////////////////////////////////////////////
 // EFFECTS
@@ -214,49 +214,6 @@ static bool multi_effect(effect_params_t* params) {
 // UTILITIES
 ////////////////////////////////////////////////////////////////////////////////
 
-HSV get_sub_pixel_(int strip_index, HSV *colors, int color_count) {
-    int color_index_low, color_index_high;
-    float color_index, color_index_decimal;
-    HSV color_low, color_high;
-
-    // No palette to sample from — return black rather than dividing by zero.
-    if (color_count == 0) return (HSV) {0,0,0};
-
-    color_index = ((float) strip_index / MATRIX_COLS) * color_count;
-    color_index_decimal = color_index - floor(color_index);
-    color_index_low = floor(color_index);
-    color_index_high = (int) ceil(color_index) % color_count;
-
-    color_low = colors[color_index_low];
-    color_high = colors[color_index_high];
-
-    // Linearly interpolate each channel between the two stops.
-    return (HSV) {
-        (uint8_t) (color_low.h * (1 - color_index_decimal) + color_high.h * color_index_decimal),
-        (uint8_t) (color_low.s * (1 - color_index_decimal) + color_high.s * color_index_decimal),
-        (uint8_t) (color_low.v * (1 - color_index_decimal) + color_high.v * color_index_decimal)
-    };
-}
-
-void set_leds_with_gradient_(HSV *colors, int color_count, HSV *out) {
-    for (int i = 0; i < MATRIX_COLS; i++) {
-        out[i] = get_sub_pixel_(i, colors, color_count);
-    }
-}
-
-void set_album_colors_() {
-    HSV color;
-    uint8_t value = rgb_matrix_config.hsv.v;
-
-    for (int i = 0; i < theme_state.album_colors_count; i += 2) {
-        color = theme_state.album_colors[i];
-        color.v = value;
-
-        album_colors[i] = color;
-        album_colors[i + 1] = color;
-    }
-}
-
 HSV rgb_to_hsv_(RGB rgb) {
     HSV hsv;
     uint8_t rgb_min = MIN(MIN(rgb.r, rgb.g), rgb.b);
@@ -338,21 +295,15 @@ void update_color_source_() {
 
             case CS_SECONDARY:
                 for (int i = 0; i < MATRIX_COLS; i++) {
-                    cols_fg[i] = (HSV) {
-                        theme_state.secondary_color.h,
-                        theme_state.secondary_color.s,
-                        theme_state.secondary_color.v
-                    };
+                    cols_fg[i] = theme_state.secondary_color;
                 }
                 break;
 
             case CS_ALBUM:
-                set_album_colors_();
-                set_leds_with_gradient_(
-                    album_colors,
-                    theme_state.album_colors_count,
-                    cols_fg
-                );
+                for (int i = 0; i < MATRIX_COLS; i++) {
+                    cols_fg[i] = theme_state.album_colors[i];
+                    cols_fg[i].v = rgb_matrix_config.hsv.v;
+                }
                 break;
 
             // case CS_GRADIENT:
@@ -381,21 +332,15 @@ void update_color_source_() {
 
             case CS_SECONDARY:
                 for (int i = 0; i < MATRIX_COLS; i++) {
-                    cols_bg[i] = (HSV) {
-                        theme_state.secondary_color.h,
-                        theme_state.secondary_color.s,
-                        theme_state.secondary_color.v
-                    };
+                    cols_bg[i] = theme_state.secondary_color;
                 }
                 break;
 
             case CS_ALBUM:
-                set_album_colors_();
-                set_leds_with_gradient_(
-                    album_colors,
-                    theme_state.album_colors_count,
-                    cols_bg
-                );
+                for (int i = 0; i < MATRIX_COLS; i++) {
+                    cols_bg[i] = theme_state.album_colors[i];
+                    cols_bg[i].v = rgb_matrix_config.hsv.v;
+                }
                 break;
 
             // case CS_GRADIENT:
