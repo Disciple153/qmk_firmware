@@ -26,7 +26,7 @@
 #define LCD_CS_PIN D2
 #define LCD_DC_PIN A15
 #ifndef LCD_ACTIVITY_TIMEOUT
-#    define LCD_ACTIVITY_TIMEOUT 60000
+#    define LCD_ACTIVITY_TIMEOUT 300000
 #endif // LCD_ACTIVITY_TIMEOUT
 
 // Backlight driver (to control LCD backlight)

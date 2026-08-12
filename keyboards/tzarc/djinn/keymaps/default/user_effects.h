@@ -6,8 +6,16 @@ Row 0 is at the top
 TODO:
 - Implement reactive effects
 - Display notifications on the LCD
-- Customize the base color for FFT effects
-- Display more Album Art colors
+- A second light component to control the secondary color.
+- A slider from 1 to 7 to change the number of album colors displayed.
+- These fields should write their last known state on reconnection:
+    - album_colors
+    - album_colors_count
+    - color_source_fg
+    - color_source_bg
+    - color_effect
+    - position_effect
+    - scroll_time_ds
 */
 
 #include "theme_djinn_default.h"
@@ -314,9 +322,9 @@ bool cmp_hsv(HSV a, HSV b) {
 void update_color_source_() {
     if (
         theme_state.color_source_fg != color_source_fg ||
-        (color_source_fg == CS_ALBUM && cmp_hsv(cols_fg[0], theme_state.album_colors[0])) ||
-        (color_source_fg == CS_PRIMARY && cmp_hsv(cols_fg[0], rgb_matrix_config.hsv)) ||
-        (color_source_fg == CS_SECONDARY && cmp_hsv(cols_fg[0], theme_state.secondary_color))
+        (color_source_fg == CS_ALBUM && !cmp_hsv(cols_fg[0], theme_state.album_colors[0])) ||
+        (color_source_fg == CS_PRIMARY && !cmp_hsv(cols_fg[0], rgb_matrix_config.hsv)) ||
+        (color_source_fg == CS_SECONDARY && !cmp_hsv(cols_fg[0], theme_state.secondary_color))
     ) {
 
         color_source_fg = theme_state.color_source_fg;
@@ -358,9 +366,9 @@ void update_color_source_() {
 
     if (
         theme_state.color_source_bg != color_source_bg ||
-        (color_source_bg == CS_ALBUM  && cmp_hsv(cols_bg[0], theme_state.album_colors[0])) ||
-        (color_source_bg == CS_PRIMARY && cmp_hsv(cols_bg[0], rgb_matrix_config.hsv)) ||
-        (color_source_bg == CS_SECONDARY && cmp_hsv(cols_bg[0], theme_state.secondary_color))
+        (color_source_bg == CS_ALBUM  && !cmp_hsv(cols_bg[0], theme_state.album_colors[0])) ||
+        (color_source_bg == CS_PRIMARY && !cmp_hsv(cols_bg[0], rgb_matrix_config.hsv)) ||
+        (color_source_bg == CS_SECONDARY && !cmp_hsv(cols_bg[0], theme_state.secondary_color))
     ) {
         color_source_bg = theme_state.color_source_bg;
 
