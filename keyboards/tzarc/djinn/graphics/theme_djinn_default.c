@@ -258,6 +258,15 @@ void draw_ui_user(bool force_redraw) {
                         snprintf(buf, sizeof(buf), "ram: %d", theme_state.mem_pct);
                         ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
                     }
+
+
+                    snprintf(buf, sizeof(buf), "album_c_c: %d", theme_state.album_colors_count);
+                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
+                    for (int i = 0; i < theme_state.album_colors_count; i++) {
+                        HSV color = theme_state.album_colors[i];
+                        snprintf(buf, sizeof(buf), "album_c %d: %d - %d - %d", i, color.h, color.s, color.v);
+                        ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
+                    }
                 }
                 break;
             case _MEDIA:
@@ -448,7 +457,17 @@ void encode_rgb_state(uint8_t *data) {
     data[7] = get_backlight_level();
 }
 
+void encode_multi_effect_state(uint8_t *data) {
+    // data[0] is the command id
+    // data[1] is a request/response ID
+    data[1] = theme_state.color_source_fg;
+    data[2] = theme_state.color_source_bg;
+    data[3] = theme_state.color_effect;
+    data[4] = theme_state.position_effect;
+}
+
 bool via_command_kb(uint8_t *data, uint8_t length) {
+    uint8_t count;
     uint8_t *command_id = &(data[0]);
 
     switch (*command_id) {
@@ -460,7 +479,7 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
             rgb_matrix_sethsv_noeeprom(data[2], data[3], data[4]);
             rgb_matrix_set_speed_noeeprom(data[5]);
             rgb_matrix_mode_noeeprom(data[6]);
-            backlight_level_noeeprom(data[7]);
+            backlight_level_noeeprom(data[7]); // FIXME
 
             encode_rgb_state(data);
             break;
@@ -494,10 +513,11 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
             break;
 
         case ID_ALBUM_COLORS_SET:
-            uint8_t count = data[1];
-            if (count > 7) count = 7;
+            count = data[1];
+            if (count > ALBUM_COLORS_COUNT) count = ALBUM_COLORS_COUNT;
+            theme_state.album_colors_count = ALBUM_COLORS_COUNT;
 
-            for (uint8_t i = 0; i < count; ++i) {
+            for (uint8_t i = 0; i < ALBUM_COLORS_COUNT; ++i) {
                 theme_state.album_colors[i].h = data[2 + (i * 2)];
                 theme_state.album_colors[i].s = data[2 + (i * 2) + 1];
             }
@@ -506,6 +526,18 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
         case ID_HOST_STRING:
             memset(theme_state.host_string, 0, sizeof(theme_state.host_string));
             memcpy(theme_state.host_string, &data[1], sizeof(theme_state.host_string) - 1);
+            break;
+
+        case ID_MULTI_EFFECT_GET:
+            encode_multi_effect_state(data);
+            break;
+
+        case ID_MULTI_EFFECT_SET:
+            theme_state.color_source_fg = data[1];
+            theme_state.color_source_bg = data[2];
+            theme_state.color_effect = data[3];
+            theme_state.position_effect = data[4];
+            encode_multi_effect_state(data);
             break;
 
         default:

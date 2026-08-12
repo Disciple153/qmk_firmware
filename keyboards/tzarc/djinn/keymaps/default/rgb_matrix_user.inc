@@ -5,7 +5,7 @@
 // (note the lack of semicolon after the macro!)
 RGB_MATRIX_EFFECT(audio_fft)
 RGB_MATRIX_EFFECT(audio_fft_album)
-RGB_MATRIX_EFFECT(my_cool_effect2)
+RGB_MATRIX_EFFECT(multi_effect)
 
 // Step 2.
 // Define effects inside the `RGB_MATRIX_CUSTOM_EFFECT_IMPLS` ifdef block

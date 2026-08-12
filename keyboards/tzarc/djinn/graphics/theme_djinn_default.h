@@ -17,6 +17,36 @@
 #define TEXT_MARGIN 16
 
 #define MAX_FFT_BANDS 14
+#define ALBUM_COLORS_COUNT (MAX_FFT_BANDS / 2)
+
+enum custom_hid_ids {
+    ID_RGB_GET          = 0x80,
+    ID_RGB_SET          = 0x81,
+    ID_PC_STATS_UPDATE  = 0x82,
+    ID_FFT_SET          = 0x83,
+    ID_ALBUM_COLORS_SET = 0x84,
+    ID_HOST_STRING      = 0x85,
+    ID_MULTI_EFFECT_GET = 0x86,
+    ID_MULTI_EFFECT_SET = 0x87
+};
+
+enum ColorSource {
+    CS_PRIMARY = 0x00,    ///< Every LED uses primary_color.
+    CS_SECONDARY = 0x01,  ///< Every LED uses secondary_color.
+    // CS_GRADIENT = 0x02,   ///< LEDs are sampled from gradient_colors_fg/bg via interpolation.
+    CS_ALBUM = 0x03,      ///< LEDs are sampled from album_colors (derived from album art), via interpolation.
+};
+
+enum ColorEffect {
+    CE_NONE = 0x00,           ///< All weights are 1 (fully foreground).
+    CE_SPECTRUM = 0x01,       ///< Weights follow live audio spectrum band levels received over MQTT.
+    // CE_PULSE = 0x02,          ///< Weights follow a smooth cosine pulse across the whole strip.
+};
+
+enum PositionEffect {
+    PE_NONE = 0x00,    ///< Colors/weights are applied 1:1 to LED positions.
+    PE_SCROLL = 0x01,  ///< Colors/weights are scrolled continuously along the strip over time.
+};
 
 //----------------------------------------------------------
 // Sync
@@ -31,21 +61,18 @@ typedef struct theme_runtime_config {
     uint8_t hour;
     uint8_t minute;
     uint8_t fft_band_count;
-    uint8_t fft_bands[14];
+    uint8_t fft_bands[MAX_FFT_BANDS];
     bool fft_active;
-    HSV album_colors[7];
+    HSV album_colors[ALBUM_COLORS_COUNT];
+    int album_colors_count;
+    enum ColorSource color_source_fg;
+    enum ColorSource color_source_bg;
+    enum ColorEffect color_effect;
+    enum PositionEffect position_effect;
     char host_string[20];
+    int scroll_time_ms;
 } theme_runtime_config;
 #pragma pack(pop)
-
-enum custom_hid_ids {
-    ID_RGB_GET          = 0x80,
-    ID_RGB_SET          = 0x81,
-    ID_PC_STATS_UPDATE  = 0x82,
-    ID_FFT_SET          = 0x83,
-    ID_ALBUM_COLORS_SET = 0x84,
-    ID_HOST_STRING      = 0x85
-};
 
 extern theme_runtime_config theme_state;
 
