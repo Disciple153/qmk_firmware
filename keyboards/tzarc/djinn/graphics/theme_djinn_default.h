@@ -31,6 +31,7 @@ enum custom_hid_ids {
 };
 
 enum ColorSource {
+    CS_VOID = 0xFF,
     CS_PRIMARY = 0x00,    ///< Every LED uses primary_color.
     CS_SECONDARY = 0x01,  ///< Every LED uses secondary_color.
     // CS_GRADIENT = 0x02,   ///< LEDs are sampled from gradient_colors_fg/bg via interpolation.
@@ -38,12 +39,14 @@ enum ColorSource {
 };
 
 enum ColorEffect {
+    CE_VOID = 0xFF,
     CE_NONE = 0x00,           ///< All weights are 1 (fully foreground).
     CE_SPECTRUM = 0x01,       ///< Weights follow live audio spectrum band levels received over MQTT.
     // CE_PULSE = 0x02,          ///< Weights follow a smooth cosine pulse across the whole strip.
 };
 
 enum PositionEffect {
+    PE_VOID = 0xFF,
     PE_NONE = 0x00,    ///< Colors/weights are applied 1:1 to LED positions.
     PE_SCROLL = 0x01,  ///< Colors/weights are scrolled continuously along the strip over time.
 };
@@ -60,6 +63,7 @@ typedef struct theme_runtime_config {
     uint8_t mem_pct;
     uint8_t hour;
     uint8_t minute;
+    HSV secondary_color;
     uint8_t fft_band_count;
     uint8_t fft_bands[MAX_FFT_BANDS];
     bool fft_active;
@@ -70,7 +74,7 @@ typedef struct theme_runtime_config {
     enum ColorEffect color_effect;
     enum PositionEffect position_effect;
     char host_string[20];
-    int scroll_time_ms;
+    int scroll_time_ds;
 } theme_runtime_config;
 #pragma pack(pop)
 

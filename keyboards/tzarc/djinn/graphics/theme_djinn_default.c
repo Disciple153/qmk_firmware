@@ -258,15 +258,6 @@ void draw_ui_user(bool force_redraw) {
                         snprintf(buf, sizeof(buf), "ram: %d", theme_state.mem_pct);
                         ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, 100);
                     }
-
-
-                    snprintf(buf, sizeof(buf), "album_c_c: %d", theme_state.album_colors_count);
-                    ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
-                    for (int i = 0; i < theme_state.album_colors_count; i++) {
-                        HSV color = theme_state.album_colors[i];
-                        snprintf(buf, sizeof(buf), "album_c %d: %d - %d - %d", i, color.h, color.s, color.v);
-                        ypos = print_and_clear(TEXT_MARGIN, ypos, buf, curr_hue, curr_sat, MARGIN_R);
-                    }
                 }
                 break;
             case _MEDIA:
@@ -464,6 +455,7 @@ void encode_multi_effect_state(uint8_t *data) {
     data[2] = theme_state.color_source_bg;
     data[3] = theme_state.color_effect;
     data[4] = theme_state.position_effect;
+    data[5] = theme_state.scroll_time_ds;
 }
 
 bool via_command_kb(uint8_t *data, uint8_t length) {
@@ -537,6 +529,12 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
             theme_state.color_source_bg = data[2];
             theme_state.color_effect = data[3];
             theme_state.position_effect = data[4];
+            theme_state.scroll_time_ds = data[5];
+
+            if (theme_state.scroll_time_ds < 1) {
+                theme_state.scroll_time_ds = 1;
+            }
+
             encode_multi_effect_state(data);
             break;
 
